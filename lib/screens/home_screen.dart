@@ -123,13 +123,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   controller: _questionController,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.8),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9),
                     letterSpacing: 1,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Ask a question...',
                     hintStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
                     ),
                     border: InputBorder.none,
                   ),
@@ -175,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ? 'Tap to ask again'
                           : 'Shake to reveal your fate',
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.5),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                     letterSpacing: 1.5,
                     fontSize: 13,
                   ),
