@@ -25,7 +25,7 @@ class MagicBallWidget extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: primary.withOpacity(0.5),
+            color: primary.withValues(alpha: 0.5),
             blurRadius: 40,
             spreadRadius: 5,
           ),
@@ -38,7 +38,7 @@ class MagicBallWidget extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white30, width: 2),
-            color: innerColor.withOpacity(0.7),
+            color: innerColor.withValues(alpha: 0.7),
           ),
           child: const Center(
             child: Text(

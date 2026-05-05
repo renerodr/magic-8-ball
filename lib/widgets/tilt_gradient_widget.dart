@@ -55,9 +55,9 @@ class _TiltGradientWidgetState extends State<TiltGradientWidget> {
                   begin: Alignment(_tiltX - 0.5, _tiltY - 0.5),
                   end: Alignment(_tiltX + 0.5, _tiltY + 0.5),
                   colors: [
-                    primary.withOpacity(0.25),
+                    primary.withValues(alpha: 0.25),
                     Colors.transparent,
-                    Colors.white.withOpacity(0.08),
+                    Colors.white.withValues(alpha: 0.08),
                   ],
                 ),
               ),

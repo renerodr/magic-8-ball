@@ -46,7 +46,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: readings.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final r = readings[index];
               return ListTile(
