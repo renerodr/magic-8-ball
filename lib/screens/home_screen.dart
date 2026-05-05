@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:http/http.dart' as http;
@@ -12,7 +13,7 @@ import '../widgets/magic_ball_widget.dart';
 import '../widgets/tilt_gradient_widget.dart';
 import 'history_screen.dart';
 
-const _apiKey = String.fromEnvironment('OPENROUTER_KEY', defaultValue: 'YOUR_KEY_HERE');
+const _apiKey = String.fromEnvironment('OPENROUTER_KEY', defaultValue: '');
 
 enum _BallState { idle, thinking, revealed }
 
@@ -33,14 +34,16 @@ class _HomeScreenState extends State<HomeScreen> {
   final _historyService = HistoryService();
   late final AiService _aiService;
 
+  StreamSubscription<void>? _shakeSubscription;
   _BallState _state = _BallState.idle;
   String _currentAnswer = '';
+  DateTime? _currentTimestamp;
 
   @override
   void initState() {
     super.initState();
     _aiService = AiService(client: http.Client(), apiKey: _apiKey);
-    _shakeService.onShake.listen((_) => _onShake());
+    _shakeSubscription = _shakeService.onShake.listen((_) => _onShake());
   }
 
   Future<void> _onShake() async {
@@ -55,23 +58,29 @@ class _HomeScreenState extends State<HomeScreen> {
       question: _questionController.text.trim(),
     );
 
+    final timestamp = DateTime.now();
     await _historyService.addReading(Reading(
       question: _questionController.text.trim(),
       answer: answer,
-      timestamp: DateTime.now(),
+      timestamp: timestamp,
     ));
 
     setState(() {
       _currentAnswer = answer;
+      _currentTimestamp = timestamp;
       _state = _BallState.revealed;
     });
     await _hapticService.onReveal();
   }
 
-  void _reset() => setState(() => _state = _BallState.idle);
+  void _reset() => setState(() {
+        _state = _BallState.idle;
+        _currentTimestamp = null;
+      });
 
   @override
   void dispose() {
+    _shakeSubscription?.cancel();
     _shakeService.dispose();
     _soundService.dispose();
     _questionController.dispose();
@@ -139,10 +148,19 @@ class _HomeScreenState extends State<HomeScreen> {
                               .animate(onPlay: (c) => c.repeat())
                               .shimmer(duration: 1000.ms, color: Colors.white24)
                           : const MagicBallWidget(),
-                      AnswerRevealWidget(
-                        answer: _currentAnswer,
-                        isVisible: isRevealed,
-                      ),
+                      if (isRevealed && _currentTimestamp != null)
+                        Hero(
+                          tag: 'answer-${_currentTimestamp!.millisecondsSinceEpoch}',
+                          child: AnswerRevealWidget(
+                            answer: _currentAnswer,
+                            isVisible: true,
+                          ),
+                        )
+                      else
+                        AnswerRevealWidget(
+                          answer: _currentAnswer,
+                          isVisible: isRevealed,
+                        ),
                     ],
                   ),
                 ),
