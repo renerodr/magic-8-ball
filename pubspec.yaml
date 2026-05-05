@@ -1,0 +1,27 @@
+name: magic_8_ball
+description: "AI-powered Magic 8-Ball with shake detection, OpenRouter AI, and dual themes."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sensors_plus: ^5.0.0
+  audioplayers: ^6.0.0
+  shared_preferences: ^2.3.0
+  http: ^1.2.0
+  flutter_animate: ^4.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  flutter_lints: ^6.0.0
+
+flutter:
+  assets:
+    - assets/sounds/water_slosh.mp3
