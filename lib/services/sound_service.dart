@@ -4,7 +4,11 @@ class SoundService {
   final AudioPlayer _player = AudioPlayer();
 
   Future<void> playSlosh() async {
-    await _player.play(AssetSource('sounds/water_slosh.mp3'));
+    try {
+      await _player.play(AssetSource('sounds/water_slosh.mp3'));
+    } catch (_) {
+      // Sound is non-critical; swallow errors so the shake flow continues.
+    }
   }
 
   void dispose() => _player.dispose();
