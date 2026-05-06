@@ -25,7 +25,6 @@ class SpeechService {
       },
       listenFor: const Duration(seconds: 10),
       pauseFor: const Duration(seconds: 1, milliseconds: 500),
-      partialResults: true,
     );
 
     while (_speech.isListening) {

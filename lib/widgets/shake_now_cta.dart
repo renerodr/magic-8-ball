@@ -7,7 +7,6 @@ class ShakeNowCta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = Theme.of(context).colorScheme.surface;
 
     return GestureDetector(
