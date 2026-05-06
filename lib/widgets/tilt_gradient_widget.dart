@@ -41,7 +41,6 @@ class _TiltGradientWidgetState extends State<TiltGradientWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
     return Stack(
       children: [
         widget.child,
@@ -55,9 +54,9 @@ class _TiltGradientWidgetState extends State<TiltGradientWidget> {
                   begin: Alignment(_tiltX - 0.5, _tiltY - 0.5),
                   end: Alignment(_tiltX + 0.5, _tiltY + 0.5),
                   colors: [
-                    primary.withValues(alpha: 0.25),
+                    Colors.white.withValues(alpha: 0.2),
                     Colors.transparent,
-                    Colors.white.withValues(alpha: 0.08),
+                    Colors.white.withValues(alpha: 0.05),
                   ],
                 ),
               ),
