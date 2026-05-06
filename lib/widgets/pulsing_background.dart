@@ -28,7 +28,7 @@ class _PulsingBackgroundState extends State<PulsingBackground>
       duration: const Duration(seconds: 4),
       vsync: this,
     );
-    _pulseAnimation = Tween<double>(begin: 0.05, end: 0.1).animate(
+    _pulseAnimation = Tween<double>(begin: 0.05, end: 0.12).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
     _controller.repeat(reverse: true);
@@ -47,14 +47,14 @@ class _PulsingBackgroundState extends State<PulsingBackground>
     return AnimatedBuilder(
       animation: _pulseAnimation,
       builder: (context, child) {
-        final alpha = reducedMotion ? 0.08 : _pulseAnimation.value;
+        final alpha = reducedMotion ? 0.06 : _pulseAnimation.value;
         return Container(
           decoration: BoxDecoration(
             gradient: RadialGradient(
               center: const Alignment(0, 0.15),
               radius: 0.9,
               colors: [
-                widget.glowColor.withValues(alpha: widget.isDark ? alpha : alpha * 1.2),
+                widget.glowColor.withValues(alpha: widget.isDark ? alpha : alpha * 0.8),
                 Theme.of(context).scaffoldBackgroundColor,
               ],
             ),
