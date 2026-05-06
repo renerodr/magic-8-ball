@@ -8,4 +8,6 @@ class HapticService {
     await Future.delayed(const Duration(milliseconds: 120));
     await HapticFeedback.lightImpact();
   }
+
+  Future<void> onError() => HapticFeedback.heavyImpact();
 }

@@ -19,7 +19,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('OUTLOOK GOOD'), findsOneWidget);
+    expect(find.text('Outlook good'), findsOneWidget);
   });
 
   testWidgets('AnswerRevealWidget is invisible when isVisible=false', (tester) async {

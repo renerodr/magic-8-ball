@@ -22,6 +22,14 @@ class HistoryService {
     return readings;
   }
 
+  Future<void> deleteReading(Reading reading) async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getStringList(_key) ?? [];
+    final json = jsonEncode(reading.toJson());
+    existing.removeWhere((item) => item == json);
+    await prefs.setStringList(_key, existing);
+  }
+
   Future<void> clearHistory() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_key);
