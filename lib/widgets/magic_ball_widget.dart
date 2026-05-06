@@ -1,3 +1,4 @@
+import 'dart:math' show pi;
 import 'package:flutter/material.dart';
 
 class MagicBallWidget extends StatefulWidget {
@@ -20,11 +21,15 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
   late final AnimationController _breatheController;
   late final AnimationController _shakeController;
   late final AnimationController _wobbleController;
+  late final AnimationController _gradientController;
+  late final AnimationController _glowController;
   late final Animation<double> _floatAnimation;
   late final Animation<double> _breatheAnimation;
   late final Animation<double> _shakeScaleAnimation;
   late final Animation<double> _shakeRotationAnimation;
   late final Animation<double> _wobbleAnimation;
+  late final Animation<double> _gradientAnimation;
+  late final Animation<double> _glowAnimation;
 
   bool _reduceMotion = false;
   bool _isThinking = false;
@@ -45,13 +50,26 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
+    _gradientController = AnimationController(
+      duration: const Duration(seconds: 10),
+      vsync: this,
+    );
+    _glowController = AnimationController(
+      duration: const Duration(seconds: 4),
+      vsync: this,
+    );
 
     _floatAnimation = Tween<double>(begin: -4.0, end: 4.0).animate(
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
-
     _breatheAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
       CurvedAnimation(parent: _breatheController, curve: Curves.easeInOut),
+    );
+    _gradientAnimation = Tween<double>(begin: 0.0, end: 2 * pi).animate(
+      CurvedAnimation(parent: _gradientController, curve: Curves.linear),
+    );
+    _glowAnimation = Tween<double>(begin: 0.3, end: 0.6).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
 
     _shakeScaleAnimation = TweenSequence<double>([
@@ -76,11 +94,9 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-
     _wobbleAnimation = Tween<double>(begin: -0.035, end: 0.035).animate(
       CurvedAnimation(parent: _wobbleController, curve: Curves.easeInOut),
     );
-
     _wobbleController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _wobbleController.reset();
@@ -98,6 +114,8 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
     if (!_reduceMotion) {
       _floatController.repeat(reverse: true);
       _breatheController.repeat(reverse: true);
+      _gradientController.repeat();
+      _glowController.repeat(reverse: true);
     }
   }
 
@@ -130,31 +148,32 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
     _breatheController.dispose();
     _shakeController.dispose();
     _wobbleController.dispose();
+    _gradientController.dispose();
+    _glowController.dispose();
     super.dispose();
+  }
+
+  List<Color> _getIridescentColors(double angle) {
+    final colors = [
+      const Color(0xFFFF6B6B),
+      const Color(0xFFC9B1FF),
+      const Color(0xFF4ECDC4),
+      const Color(0xFFFFE66D),
+      const Color(0xFFFF6B6B),
+    ];
+    final shift = ((angle / (2 * pi)) * colors.length).floor() % colors.length;
+    return [
+      colors[shift % colors.length],
+      colors[(shift + 1) % colors.length],
+      colors[(shift + 2) % colors.length],
+      colors[(shift + 3) % colors.length],
+      colors[(shift + 4) % colors.length],
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final List<Color> darkGradientColors = [
-      const Color(0xFF0A0A0F),
-      const Color(0xFF1A1A2E),
-      const Color(0xFF0D0D1A),
-      const Color(0xFF1E1E3A),
-      const Color(0xFF3D3D5C),
-    ];
-
-    final List<Color> lightGradientColors = [
-      const Color(0xFFE0D0FF),
-      const Color(0xFFF0E8FF),
-      Colors.white,
-      Colors.white,
-      Colors.white.withValues(alpha: 0.8),
-    ];
-
-    final List<double> gradientStops = [0.0, 0.4, 0.7, 0.9, 1.0];
 
     return AnimatedBuilder(
       animation: Listenable.merge([
@@ -162,6 +181,8 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
         _breatheController,
         _shakeController,
         _wobbleController,
+        _gradientController,
+        _glowController,
       ]),
       builder: (context, child) {
         final floatOffset = _reduceMotion ? 0.0 : _floatAnimation.value;
@@ -169,6 +190,9 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
         final shakeScale = _shakeScaleAnimation.value;
         final shakeRotation = _shakeRotationAnimation.value;
         final wobbleSkew = _isThinking ? _wobbleAnimation.value : 0.0;
+        final glowOpacity = _reduceMotion ? 0.4 : _glowAnimation.value;
+        final angle = _gradientAnimation.value;
+        final iridescentColors = _getIridescentColors(angle);
 
         return Transform.translate(
           offset: Offset(0, floatOffset),
@@ -188,83 +212,83 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
-                      colors:
-                          isDark ? darkGradientColors : lightGradientColors,
-                      stops: gradientStops,
-                      center: const Alignment(-0.3, -0.3),
+                      colors: iridescentColors,
+                      stops: const [0.0, 0.3, 0.5, 0.7, 1.0],
+                      center: const Alignment(-0.35, -0.35),
                       radius: 0.9,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: primary.withValues(alpha: 0.5),
+                        color: primary.withValues(alpha: glowOpacity),
                         blurRadius: 40,
                         spreadRadius: 5,
                       ),
                       BoxShadow(
-                        color: primary.withValues(alpha: 0.15),
+                        color: primary.withValues(alpha: glowOpacity * 0.3),
                         blurRadius: 60,
                         spreadRadius: -10,
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        boxShadow: [
-                          BoxShadow(
-                            color: isDark
-                                ? primary.withValues(alpha: 0.3)
-                                : const Color(0xFF4A0080)
-                                    .withValues(alpha: 0.2),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: ClipPath(
-                        clipper: _TriangleClipper(),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Specular highlight
+                      Positioned(
+                        top: 40,
+                        left: 40,
                         child: Container(
-                          width: 100,
-                          height: 100,
+                          width: 80,
+                          height: 80,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: isDark
-                                  ? [
-                                      const Color(0xFF000066),
-                                      const Color(0xFF000033)
-                                    ]
-                                  : [
-                                      const Color(0xFFE6E6FF),
-                                      const Color(0xFFCCCCFF)
-                                    ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(
-                                    alpha: isDark ? 0.4 : 0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Text(
-                              '8',
-                              style: TextStyle(
-                                fontFamily: 'Georgia',
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                Colors.white.withValues(alpha: 0.5),
+                                Colors.white.withValues(alpha: 0.0),
+                              ],
                             ),
                           ),
                         ),
                       ),
-                    ),
+                      // Inner shadow for depth
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            center: const Alignment(0.4, 0.4),
+                            radius: 0.8,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.15),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Content: "8" when idle, sparkle when thinking
+                      if (!widget.isThinking)
+                        Text(
+                          '8',
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: 48,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 12,
+                                color: Colors.black.withValues(alpha: 0.3),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        const Icon(
+                          Icons.auto_awesome,
+                          size: 40,
+                          color: Colors.white,
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -274,21 +298,4 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
       },
     );
   }
-}
-
-class _TriangleClipper extends CustomClipper<Path> {
-  const _TriangleClipper();
-
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.moveTo(0, 0);
-    path.lineTo(size.width, 0);
-    path.lineTo(size.width / 2, size.height);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
