@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:http/http.dart' as http;
 import '../models/reading.dart';
 import '../services/ai_service.dart';
@@ -9,10 +8,13 @@ import '../services/haptic_service.dart';
 import '../services/history_service.dart';
 import '../services/shake_service.dart';
 import '../services/sound_service.dart';
-import '../widgets/answer_reveal_widget.dart';
+import '../widgets/answer_card_widget.dart';
 import '../widgets/magic_ball_widget.dart';
 import '../widgets/pulsing_background.dart';
+import '../widgets/shake_now_cta.dart';
 import '../widgets/tilt_gradient_widget.dart';
+import '../widgets/voice_input_button.dart';
+import '../services/speech_service.dart';
 import 'history_screen.dart';
 
 const _apiKey = String.fromEnvironment('OPENROUTER_KEY', defaultValue: '');
@@ -35,13 +37,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final _soundService = SoundService();
   final _historyService = HistoryService();
   final _questionFocusNode = FocusNode();
+  final _speechService = SpeechService();
   late final AiService _aiService;
 
   StreamSubscription<void>? _shakeSubscription;
   _BallState _state = _BallState.idle;
   String _currentAnswer = '';
-  DateTime? _currentTimestamp;
   bool _isShaking = false;
+  bool _isListening = false;
 
   @override
   void initState() {
@@ -75,7 +78,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() {
       _currentAnswer = answer;
-      _currentTimestamp = timestamp;
       _state = _BallState.revealed;
       _isShaking = false;
     });
@@ -84,14 +86,43 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _reset() => setState(() {
         _state = _BallState.idle;
-        _currentTimestamp = null;
       });
+
+  Future<void> _startVoiceInput() async {
+    if (_state != _BallState.idle) return;
+
+    final available = await _speechService.initialize();
+    if (!available) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Microphone access is needed for voice input.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isListening = true);
+    final result = await _speechService.listen();
+    setState(() => _isListening = false);
+
+    if (result != null && result.isNotEmpty) {
+      _questionController.text = result;
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (mounted) {
+        await _onShake();
+      }
+    }
+  }
 
   @override
   void dispose() {
     _shakeSubscription?.cancel();
     _shakeService.dispose();
     _soundService.dispose();
+    _speechService.stop();
     _questionController.dispose();
     _questionFocusNode.dispose();
     super.dispose();
@@ -140,66 +171,47 @@ class _HomeScreenState extends State<HomeScreen> {
             isDark: isDark,
             child: SafeArea(
               top: false,
-              child: Column(
-                children: [
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
                     child: _QuestionInput(
                       controller: _questionController,
                       focusNode: _questionFocusNode,
                       onSubmitted: _onShake,
+                      isListening: _isListening,
+                      onMicTap: _startVoiceInput,
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 24),
                   GestureDetector(
                     onTap: _onShake,
                     child: TiltGradientWidget(
                       size: 300,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          isThinking
-                              ? MagicBallWidget(isShaking: true, isThinking: true)
-                                  .animate(onPlay: (c) => c.repeat())
-                                  .shimmer(duration: 1000.ms, color: Colors.white24)
-                              : MagicBallWidget(isShaking: _isShaking),
-                          if (isRevealed && _currentTimestamp != null)
-                            Hero(
-                              tag: 'answer-${_currentTimestamp!.millisecondsSinceEpoch}',
-                              child: AnswerRevealWidget(
-                                answer: _currentAnswer,
-                                isVisible: true,
-                              ),
-                            )
-                          else
-                            AnswerRevealWidget(
-                              answer: _currentAnswer,
-                              isVisible: isRevealed,
-                            ),
-                        ],
+                      child: MagicBallWidget(
+                        isShaking: _isShaking,
+                        isThinking: isThinking,
                       ),
                     ),
                   ),
-                  const Spacer(),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _ShakeNowChip(onTap: _onShake),
+                  const SizedBox(height: 24),
+                  AnswerCardWidget(
+                    answer: _currentAnswer,
+                    isVisible: isRevealed,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 32),
-                    child: Text(
-                      isThinking
-                          ? 'Consulting the oracle...'
-                          : isRevealed
-                          ? 'Tap the ball to ask again'
-                          : 'Shake your phone or tap the ball',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
-                        letterSpacing: 0.8,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                  const SizedBox(height: 16),
+                  if (_state == _BallState.idle)
+                    ShakeNowCta(onTap: _onShake),
+                  const SizedBox(height: 32),
+                  Text(
+                    isThinking
+                        ? 'Consulting the oracle...'
+                        : isRevealed
+                            ? 'Tap to ask again'
+                            : 'Shake your phone, tap the ball, or ask aloud',
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const _BottomFadeGradient(),
                 ],
@@ -208,7 +220,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }
 
@@ -217,7 +230,6 @@ class _BottomFadeGradient extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 20,
       decoration: BoxDecoration(
@@ -226,9 +238,7 @@ class _BottomFadeGradient extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [
             Colors.transparent,
-            isDark
-                ? const Color(0xFF0A0A0F).withValues(alpha: 0.5)
-                : const Color(0xFFF5F0FF).withValues(alpha: 0.5),
+            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.5),
           ],
         ),
       ),
@@ -240,11 +250,15 @@ class _QuestionInput extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onSubmitted;
+  final bool isListening;
+  final VoidCallback onMicTap;
 
   const _QuestionInput({
     required this.controller,
     required this.focusNode,
     required this.onSubmitted,
+    required this.isListening,
+    required this.onMicTap,
   });
 
   @override
@@ -329,7 +343,7 @@ class _QuestionInputState extends State<_QuestionInput>
                 fontWeight: FontWeight.w600,
               ),
               decoration: InputDecoration(
-                hintText: 'Ask anything...',
+                hintText: widget.isListening ? 'Listening...' : 'Ask anything...',
                 hintStyle: TextStyle(
                   color: Theme.of(context)
                       .colorScheme
@@ -338,67 +352,16 @@ class _QuestionInputState extends State<_QuestionInput>
                   fontStyle: FontStyle.italic,
                 ),
                 border: InputBorder.none,
+                suffixIcon: VoiceInputButton(
+                  isListening: widget.isListening,
+                  onTap: widget.onMicTap,
+                ),
               ),
               onSubmitted: (_) => widget.onSubmitted(),
             ),
           ),
         );
       },
-    );
-  }
-}
-
-class _ShakeNowChip extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _ShakeNowChip({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
-    final secondary = Theme.of(context).colorScheme.secondary;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark
-                ? [primary.withValues(alpha: 0.8), secondary.withValues(alpha: 0.6)]
-                : [primary, secondary],
-          ),
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: primary.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.vibration_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Shake Now',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
