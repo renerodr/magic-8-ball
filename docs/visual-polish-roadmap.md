@@ -458,3 +458,138 @@ Then continue original matrix ordering.
 
 *Last updated: 2026-05-05*
 *Next review: After P0.2 verification*
+
+---
+
+## v2 Roadmap — Cosmic Bubblegum Expansion
+
+### Where We Are
+
+Cosmic Bubblegum redesign shipped. Palette, ball, answer card, voice input, shake CTA all in production. 25/25 tests pass.
+
+---
+
+### P0: Stabilization
+
+| Task | Description |
+|---|---|
+| Update `AGENTS.md` | Refresh tech stack, dependencies, key rules. Remove deprecated `TriangleClipper` / `AnswerRevealWidget` references. |
+| P0.2 Verification | Complete pending widget tests from stabilization pass. |
+| iOS mic permissions | Add `NSMicrophoneUsageDescription` to `Info.plist` for `speech_to_text`. |
+
+---
+
+### P1: Sound & Haptic Ecosystem
+
+Every interaction gets an auditory and tactile identity.
+
+| Feature | Description |
+|---|---|
+| Reveal chime | Soft bell/chime when answer appears. Plays after haptic reveal. |
+| Button clicks | Subtle tap sound on history/theme buttons. |
+| Ambient background loop | Very quiet, slow atmospheric pad in idle state (optional toggle). |
+| Haptic patterns | Different haptics for success (reveal) vs. neutral (fallback) vs. error (network). |
+| Sound toggle | Mute switch in app bar. Persist with `shared_preferences`. |
+
+**New files:** `lib/services/sound_manager.dart`
+
+---
+
+### P2: Favorites & Enhanced History
+
+Give users a reason to revisit past readings.
+
+| Feature | Description |
+|---|---|
+| Favorite a reading | Star icon on history cards. Toggles favorite state. |
+| Favorites filter | Toggle in history app bar to show only favorites. |
+| Search history | Text search across questions and answers. |
+| Delete with undo | Swipe-to-delete with Snackbar undo. |
+
+**New files:** `lib/widgets/favorite_button.dart`, updates to `HistoryService`
+
+---
+
+### P3: Daily Fortune & Streaks
+
+Drive daily engagement.
+
+| Feature | Description |
+|---|---|
+| Daily fortune | One free "fortune" per day with enhanced AI prompt ("What does today hold for me?"). |
+| Streak counter | Consecutive days of asking. Visual flame indicator. |
+| Streak reward | Every 7 days, a special golden answer card. |
+| Notification reminder | Gentle local notification if user hasn't asked by evening (opt-in). |
+
+**New files:** `lib/services/daily_fortune_service.dart`, `lib/services/notification_service.dart`
+
+---
+
+### P4: Question Categories
+
+Guide the AI toward better, more contextual answers.
+
+| Feature | Description |
+|---|---|
+| Category chips | Horizontal scroll of chips under input: General, Love, Career, Yes/No. |
+| Category-aware prompts | Appends category context to AI prompt ("The user is asking about their career..."). |
+| Category icon on answer card | Small icon in corner of answer card indicating category. |
+
+---
+
+### P5: Onboarding & First Launch
+
+Convert downloads into engaged users.
+
+| Feature | Description |
+|---|---|
+| Onboarding flow | 3-screen intro: "Ask a question", "Shake your phone", "Discover your fate". |
+| First-launch demo | Pre-loaded first reading with a fun, guaranteed positive answer. |
+| App icon polish | Custom launcher icon matching iridescent bubble. |
+| Splash screen | Animated ball appearing from darkness. |
+
+---
+
+### P6: Share Reading as Image
+
+Organic growth through social sharing.
+
+| Feature | Description |
+|---|---|
+| Share button on answer card | Tap to generate styled image of the reading. |
+| Styled card export | Beautiful graphic with ball, question, answer, and timestamp. Uses `flutter/rendering` to capture widget as PNG. |
+| Share via system sheet | Uses `share_plus` package. |
+
+---
+
+### P7: Home Screen Widget
+
+Passive engagement and daily reminder.
+
+| Feature | Description |
+|---|---|
+| Daily fortune widget | Small widget showing today's fortune text. |
+| Medium widget | Shows fortune + streak count. |
+| Tap to open app | Deep link into daily fortune flow. |
+
+**Platform:** iOS WidgetKit + Android App Widgets. High effort, low impact for single-player app.
+
+---
+
+### Priority Matrix
+
+| Phase | Effort | Impact | Recommended Order |
+|---|---|---|---|
+| P0 Stabilization | Low | Critical | Immediate |
+| P1 Sound & Haptic | Medium | High | 1st |
+| P2 Favorites & History | Medium | High | 2nd |
+| P3 Daily Fortune | Medium | High | 3rd |
+| P4 Categories | Low | Medium | 4th |
+| P5 Onboarding | Medium | Medium | 5th |
+| P6 Share Image | Medium | Medium | 6th |
+| P7 Widget | High | Low | Deferred |
+
+---
+
+*Last updated: 2026-05-07*
+*Next review: After P0 completion*
