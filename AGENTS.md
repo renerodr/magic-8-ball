@@ -18,6 +18,8 @@ Implementation plan: `docs/superpowers/plans/2026-05-04-magic-8-ball.md`
 - `shared_preferences` — history persistence
 - `http` — OpenRouter API calls
 - `flutter_animate` — shimmer "thinking" animation
+- `speech_to_text` — voice input for hands-free questioning
+- `google_fonts` — Nunito + Inter typography
 - `mocktail` — test mocking
 
 ## Development Commands
@@ -49,7 +51,8 @@ flutter build apk --dart-define=OPENROUTER_KEY=<your_key>
 - **Fallback first:** `AiService` must always return a string — catch all exceptions and return a random classic answer. Never let a network error surface to the UI.
 - **State machine:** HomeScreen has three states — `idle`, `thinking`, `revealed`. No state transition is allowed while `thinking`.
 - **Sound asset:** `assets/sounds/water_slosh.mp3` must exist before running. If missing, `SoundService.playSlosh()` will throw.
-- **Theme:** Dark = Magic 8-Ball (obsidian + indigo). Light = Crystal Ball (white + deep purple). Both defined in `lib/constants/app_theme.dart`.
+- **Voice input:** `speech_to_text` requires microphone permission. iOS `NSMicrophoneUsageDescription` is set in `Info.plist`. Android handles this automatically.
+- **Theme:** Dark = soft charcoal `#1A1A23` + coral accent. Light = warm cream `#FAF7F2` + coral accent. Both defined in `lib/constants/app_theme.dart`.
 
 ## Code Style & Quality
 
