@@ -51,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _aiService = AiService(client: http.Client(), apiKey: _apiKey);
     _shakeSubscription = _shakeService.onShake.listen((_) => _onShake());
+    _soundService.initialize();
   }
 
   Future<void> _onShake() async {
@@ -81,7 +82,10 @@ class _HomeScreenState extends State<HomeScreen> {
       _state = _BallState.revealed;
       _isShaking = false;
     });
-    await _hapticService.onReveal();
+    await Future.wait([
+      _hapticService.onReveal(),
+      _soundService.playRevealChime(),
+    ]);
   }
 
   void _reset() => setState(() {
@@ -155,14 +159,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 context,
                 MaterialPageRoute(builder: (_) => const HistoryScreen()),
               ),
+              soundService: _soundService,
             ),
             actions: [
+              _AnimatedIconButton(
+                icon: Icon(
+                  _soundService.isMuted
+                      ? Icons.volume_off_rounded
+                      : Icons.volume_up_rounded,
+                ),
+                tooltip: _soundService.isMuted ? 'Unmute' : 'Mute',
+                onPressed: () async {
+                  await _soundService.setMuted(!_soundService.isMuted);
+                  setState(() {});
+                },
+                soundService: _soundService,
+              ),
               _AnimatedIconButton(
                 icon: Icon(
                   isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                 ),
                 tooltip: 'Toggle theme',
                 onPressed: widget.onToggleTheme,
+                soundService: _soundService,
               ),
             ],
           ),
@@ -370,11 +389,13 @@ class _AnimatedIconButton extends StatefulWidget {
   final Icon icon;
   final String tooltip;
   final VoidCallback onPressed;
+  final SoundService? soundService;
 
   const _AnimatedIconButton({
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    this.soundService,
   });
 
   @override
@@ -413,6 +434,7 @@ class _AnimatedIconButtonState extends State<_AnimatedIconButton>
   void _onTapUp(TapUpDetails details) {
     setState(() => _isPressed = false);
     _controller.reverse();
+    widget.soundService?.playButtonClick();
     widget.onPressed();
   }
 

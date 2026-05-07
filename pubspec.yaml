@@ -28,3 +28,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/sounds/water_slosh.mp3
+    - assets/sounds/reveal_chime.mp3
+    - assets/sounds/button_click.mp3
