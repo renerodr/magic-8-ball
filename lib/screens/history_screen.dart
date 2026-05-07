@@ -4,6 +4,7 @@ import '../models/reading.dart';
 import '../services/history_service.dart';
 import '../services/haptic_service.dart';
 import '../utils/motion_policy.dart';
+import '../widgets/favorite_button.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -17,6 +18,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   final _hapticService = HapticService();
   late Future<List<Reading>> _readingsFuture;
   Reading? _lastDeletedReading;
+  bool _showFavoritesOnly = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -24,9 +27,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _readingsFuture = _historyService.getReadings();
   }
 
+  void _refreshReadings() {
+    setState(() {
+      _readingsFuture = _historyService.getReadings();
+    });
+  }
+
   Future<void> _clear() async {
     await _historyService.clearHistory();
-    setState(() => _readingsFuture = _historyService.getReadings());
+    _refreshReadings();
   }
 
   void _navigateToHomeAndAsk() {
@@ -37,7 +46,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _deleteReading(Reading reading) async {
     _lastDeletedReading = reading;
     await _historyService.deleteReading(reading);
-    setState(() => _readingsFuture = _historyService.getReadings());
+    _refreshReadings();
   }
 
   Future<void> _undoDelete() async {
@@ -45,7 +54,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final reading = _lastDeletedReading!;
     _lastDeletedReading = null;
     await _historyService.addReading(reading);
-    setState(() => _readingsFuture = _historyService.getReadings());
+    _refreshReadings();
+  }
+
+  Future<void> _toggleFavorite(Reading reading) async {
+    await _historyService.toggleFavorite(reading);
+    _refreshReadings();
+  }
+
+  List<Reading> _filterReadings(List<Reading> readings) {
+    var filtered = readings;
+
+    if (_showFavoritesOnly) {
+      filtered = filtered.where((r) => r.isFavorite).toList();
+    }
+
+    if (_searchQuery.isNotEmpty) {
+      final lowerQuery = _searchQuery.toLowerCase();
+      filtered = filtered.where((r) {
+        return r.question.toLowerCase().contains(lowerQuery) ||
+            r.answer.toLowerCase().contains(lowerQuery);
+      }).toList();
+    }
+
+    return filtered;
   }
 
   @override
@@ -59,55 +91,124 @@ class _HistoryScreenState extends State<HistoryScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            icon: Icon(
+              _showFavoritesOnly ? Icons.favorite : Icons.favorite_border,
+              color: _showFavoritesOnly ? const Color(0xFFFF6B6B) : null,
+            ),
+            tooltip: _showFavoritesOnly ? 'Show all' : 'Show favorites',
+            onPressed: () {
+              setState(() => _showFavoritesOnly = !_showFavoritesOnly);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: _clear,
           ),
         ],
       ),
-      body: FutureBuilder<List<Reading>>(
-        future: _readingsFuture,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final readings = snapshot.data!;
-          if (readings.isEmpty) {
-            return _buildEmptyState(context);
-          }
-            return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            itemCount: readings.length,
-            itemBuilder: (context, index) {
-              final reading = readings[index];
-              final policy = MotionPolicy.of(context);
-              return _buildHistoryCard(
-                context,
-                reading,
-                index,
-                readings.length,
-              )
-                  .animate()
-                  .fadeIn(
-                    duration: policy.cardEntryDuration(),
-                    delay: policy.staggerDelay(index),
-                  )
-                  .slideY(
-                    begin: 0.2,
-                    end: 0,
-                    duration: policy.cardEntryDuration(),
-                    delay: policy.staggerDelay(index),
-                    curve: Curves.easeOut,
-                  )
-                  .scale(
-                    begin: const Offset(0.95, 0.95),
-                    end: const Offset(1.0, 1.0),
-                    duration: policy.cardEntryDuration(),
-                    delay: policy.staggerDelay(index),
-                    curve: Curves.easeOut,
+      body: Column(
+        children: [
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search readings...',
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                  border: InputBorder.none,
+                  icon: Icon(
+                    Icons.search,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                ),
+                onChanged: (value) => setState(() => _searchQuery = value),
+              ),
+            ),
+          ),
+          // Readings list
+          Expanded(
+            child: FutureBuilder<List<Reading>>(
+              future: _readingsFuture,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final allReadings = snapshot.data!;
+                final readings = _filterReadings(allReadings);
+
+                if (allReadings.isEmpty) {
+                  return _buildEmptyState(context);
+                }
+
+                if (readings.isEmpty) {
+                  return Center(
+                    child: Text(
+                      _showFavoritesOnly
+                          ? 'No favorites yet'
+                          : 'No matches found',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
                   );
-            },
-          );
-        },
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  itemCount: readings.length,
+                  itemBuilder: (context, index) {
+                    final reading = readings[index];
+                    final policy = MotionPolicy.of(context);
+                    return _buildHistoryCard(
+                      context,
+                      reading,
+                      index,
+                      readings.length,
+                    )
+                        .animate()
+                        .fadeIn(
+                          duration: policy.cardEntryDuration(),
+                          delay: policy.staggerDelay(index),
+                        )
+                        .slideY(
+                          begin: 0.2,
+                          end: 0,
+                          duration: policy.cardEntryDuration(),
+                          delay: policy.staggerDelay(index),
+                          curve: Curves.easeOut,
+                        )
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          end: const Offset(1.0, 1.0),
+                          duration: policy.cardEntryDuration(),
+                          delay: policy.staggerDelay(index),
+                          curve: Curves.easeOut,
+                        );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -188,10 +289,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildHistoryCard(
-      BuildContext context,
-      Reading reading,
-      int index,
-      int totalLength,
+    BuildContext context,
+    Reading reading,
+    int index,
+    int totalLength,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
@@ -202,7 +303,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        color: Colors.red.withValues(alpha: 0.2),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: const Icon(
           Icons.delete,
           color: Colors.red,
@@ -243,19 +347,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Hero(
-              tag: 'answer-${reading.timestamp.millisecondsSinceEpoch}',
-              child: Material(
-                color: Colors.transparent,
-                child: Text(
-                  reading.answer.toUpperCase(),
-                  style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                        fontSize: 18,
-                        height: 1.4,
-                        letterSpacing: 0.5,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Hero(
+                    tag: 'answer-${reading.timestamp.millisecondsSinceEpoch}',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Text(
+                        reading.answer.toUpperCase(),
+                        style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                              fontSize: 18,
+                              height: 1.4,
+                              letterSpacing: 0.5,
+                            ),
                       ),
+                    ),
+                  ),
                 ),
-              ),
+                FavoriteButton(
+                  isFavorite: reading.isFavorite,
+                  onTap: () => _toggleFavorite(reading),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             if (reading.question.isNotEmpty)

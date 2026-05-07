@@ -23,5 +23,30 @@ void main() {
       final r = Reading(question: '', answer: 'Ask again later', timestamp: timestamp);
       expect(r.question, isEmpty);
     });
+
+    test('isFavorite defaults to false', () {
+      final r = Reading(question: 'Test', answer: 'Yes', timestamp: timestamp);
+      expect(r.isFavorite, isFalse);
+    });
+
+    test('isFavorite serialises and deserialises', () {
+      final original = Reading(
+        question: 'Test',
+        answer: 'Yes',
+        timestamp: timestamp,
+        isFavorite: true,
+      );
+      final json = original.toJson();
+      final restored = Reading.fromJson(json);
+
+      expect(restored.isFavorite, isTrue);
+    });
+
+    test('copyWith updates isFavorite', () {
+      final r = Reading(question: 'Test', answer: 'Yes', timestamp: timestamp);
+      final updated = r.copyWith(isFavorite: true);
+      expect(updated.isFavorite, isTrue);
+      expect(updated.question, equals(r.question));
+    });
   });
 }

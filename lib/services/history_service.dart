@@ -34,4 +34,39 @@ class HistoryService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_key);
   }
+
+  Future<void> toggleFavorite(Reading reading) async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getStringList(_key) ?? [];
+    final targetJson = jsonEncode(reading.toJson());
+
+    for (var i = 0; i < existing.length; i++) {
+      final item = Reading.fromJson(
+        jsonDecode(existing[i]) as Map<String, dynamic>,
+      );
+      if (item.timestamp == reading.timestamp &&
+          item.question == reading.question &&
+          item.answer == reading.answer) {
+        final updated = reading.copyWith(isFavorite: !reading.isFavorite);
+        existing[i] = jsonEncode(updated.toJson());
+        break;
+      }
+    }
+
+    await prefs.setStringList(_key, existing);
+  }
+
+  Future<List<Reading>> getFavorites() async {
+    final all = await getReadings();
+    return all.where((r) => r.isFavorite).toList();
+  }
+
+  Future<List<Reading>> searchReadings(String query) async {
+    final all = await getReadings();
+    final lowerQuery = query.toLowerCase();
+    return all.where((r) {
+      return r.question.toLowerCase().contains(lowerQuery) ||
+          r.answer.toLowerCase().contains(lowerQuery);
+    }).toList();
+  }
 }
