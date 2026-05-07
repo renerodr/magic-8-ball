@@ -15,6 +15,9 @@ import '../widgets/shake_now_cta.dart';
 import '../widgets/tilt_gradient_widget.dart';
 import '../widgets/voice_input_button.dart';
 import '../services/speech_service.dart';
+import '../services/daily_fortune_service.dart';
+import '../services/notification_service.dart';
+import '../widgets/streak_indicator.dart';
 import 'history_screen.dart';
 
 const _apiKey = String.fromEnvironment('OPENROUTER_KEY', defaultValue: '');
@@ -38,6 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final _historyService = HistoryService();
   final _questionFocusNode = FocusNode();
   final _speechService = SpeechService();
+  final _dailyFortuneService = DailyFortuneService();
+  final _notificationService = NotificationService();
   late final AiService _aiService;
 
   StreamSubscription<void>? _shakeSubscription;
@@ -52,6 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _aiService = AiService(client: http.Client(), apiKey: _apiKey);
     _shakeSubscription = _shakeService.onShake.listen((_) => _onShake());
     _soundService.initialize();
+    _dailyFortuneService.initialize();
+    _notificationService.initialize();
   }
 
   Future<void> _onShake() async {
@@ -76,6 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
       answer: answer,
       timestamp: timestamp,
     ));
+    await _dailyFortuneService.recordAsked();
 
     setState(() {
       _currentAnswer = answer;
@@ -204,7 +212,52 @@ class _HomeScreenState extends State<HomeScreen> {
                       onMicTap: _startVoiceInput,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
+                  StreakIndicator(streak: _dailyFortuneService.streak),
+                  const SizedBox(height: 12),
+                  if (_state == _BallState.idle && _dailyFortuneService.isDailyFortuneAvailable)
+                    GestureDetector(
+                      onTap: () {
+                        _questionController.text = _dailyFortuneService.dailyPrompt;
+                        _onShake();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFFD700).withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.wb_sunny,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Daily Fortune',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 12),
                   GestureDetector(
                     onTap: _onShake,
                     child: TiltGradientWidget(
