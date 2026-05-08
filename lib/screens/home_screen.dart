@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/reading.dart';
 import '../models/question_category.dart';
 import '../services/ai_service.dart';
@@ -61,6 +62,24 @@ class _HomeScreenState extends State<HomeScreen> {
     _soundService.initialize();
     _dailyFortuneService.initialize();
     _notificationService.initialize();
+    _checkFirstLaunchDemo();
+  }
+
+  Future<void> _checkFirstLaunchDemo() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenDemo = prefs.getBool('has_seen_first_demo') ?? false;
+    if (!hasSeenDemo) {
+      await prefs.setBool('has_seen_first_demo', true);
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        _showFirstLaunchDemo();
+      }
+    }
+  }
+
+  void _showFirstLaunchDemo() {
+    _questionController.text = 'Will I have a great day?';
+    _onShake();
   }
 
   Future<void> _onShake() async {
