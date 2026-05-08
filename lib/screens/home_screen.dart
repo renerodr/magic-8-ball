@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../models/reading.dart';
+import '../models/question_category.dart';
 import '../services/ai_service.dart';
 import '../services/haptic_service.dart';
 import '../services/history_service.dart';
@@ -50,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _currentAnswer = '';
   bool _isShaking = false;
   bool _isListening = false;
+  QuestionCategory _selectedCategory = QuestionCategory.general;
 
   @override
   void initState() {
@@ -75,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final answer = await _aiService.getAnswer(
       question: _questionController.text.trim(),
+      category: _selectedCategory,
     );
 
     final timestamp = DateTime.now();
@@ -213,6 +216,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  _CategoryChips(
+                    selectedCategory: _selectedCategory,
+                    onCategorySelected: (category) {
+                      setState(() => _selectedCategory = category);
+                    },
+                  ),
+                  const SizedBox(height: 12),
                   StreakIndicator(streak: _dailyFortuneService.streak),
                   const SizedBox(height: 12),
                   if (_state == _BallState.idle && _dailyFortuneService.isDailyFortuneAvailable)
@@ -272,6 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   AnswerCardWidget(
                     answer: _currentAnswer,
                     isVisible: isRevealed,
+                    categoryIcon: isRevealed ? _selectedCategory.icon : null,
                   ),
                   const SizedBox(height: 16),
                   if (_state == _BallState.idle)
@@ -517,6 +528,66 @@ class _AnimatedIconButtonState extends State<_AnimatedIconButton>
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _CategoryChips extends StatelessWidget {
+  final QuestionCategory selectedCategory;
+  final ValueChanged<QuestionCategory> onCategorySelected;
+
+  const _CategoryChips({
+    required this.selectedCategory,
+    required this.onCategorySelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: QuestionCategory.values.map((category) {
+          final isSelected = category == selectedCategory;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    category.icon,
+                    size: 16,
+                    color: isSelected
+                        ? Colors.white
+                        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(category.label),
+                ],
+              ),
+              selected: isSelected,
+              onSelected: (_) => onCategorySelected(category),
+              selectedColor: Theme.of(context).colorScheme.primary,
+              labelStyle: TextStyle(
+                color: isSelected
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                fontSize: 13,
+              ),
+              backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: isSelected
+                      ? Colors.transparent
+                      : Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

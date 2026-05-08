@@ -5,11 +5,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 class AnswerCardWidget extends StatelessWidget {
   final String answer;
   final bool isVisible;
+  final IconData? categoryIcon;
 
   const AnswerCardWidget({
     super.key,
     required this.answer,
     required this.isVisible,
+    this.categoryIcon,
   });
 
   @override
@@ -53,28 +55,42 @@ class AnswerCardWidget extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      trimmedAnswer,
-                      textAlign: TextAlign.center,
-                      style: textStyle.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        height: 1.4,
-                      ),
-                    )
-                        .animate()
-                        .then()
-                        .fadeIn(
-                          duration: const Duration(milliseconds: 300),
-                          delay: const Duration(milliseconds: 150),
-                        )
-                        .scale(
-                          begin: const Offset(0.95, 0.95),
-                          end: const Offset(1.0, 1.0),
-                          duration: const Duration(milliseconds: 350),
-                          curve: Curves.easeOutBack,
-                          delay: const Duration(milliseconds: 150),
+                  child: Stack(
+                    children: [
+                      if (categoryIcon != null)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Icon(
+                            categoryIcon,
+                            size: 14,
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+                          ),
                         ),
+                      SingleChildScrollView(
+                        child: Text(
+                          trimmedAnswer,
+                          textAlign: TextAlign.center,
+                          style: textStyle.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            height: 1.4,
+                          ),
+                        )
+                            .animate()
+                            .then()
+                            .fadeIn(
+                              duration: const Duration(milliseconds: 300),
+                              delay: const Duration(milliseconds: 150),
+                            )
+                            .scale(
+                              begin: const Offset(0.95, 0.95),
+                              end: const Offset(1.0, 1.0),
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeOutBack,
+                              delay: const Duration(milliseconds: 150),
+                            ),
+                      ),
+                    ],
                   ),
                 ),
               ),

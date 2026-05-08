@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import '../constants/classic_answers.dart';
+import '../models/question_category.dart';
 
 class AiService {
   final http.Client _client;
@@ -14,11 +15,15 @@ class AiService {
       : _client = client,
         _apiKey = apiKey;
 
-  Future<String> getAnswer({required String question}) async {
+  Future<String> getAnswer({
+    required String question,
+    QuestionCategory? category,
+  }) async {
     try {
+      final categoryContext = category != null ? ' ${category.promptContext}' : '';
       final prompt = question.trim().isEmpty
-          ? 'Give a single cryptic Magic 8-Ball style fortune (max 8 words, no punctuation).'
-          : 'The user asks: "$question". Reply as a Magic 8-Ball oracle with ONE cryptic answer (max 8 words, no punctuation, no explanation).';
+          ? 'Give a single cryptic Magic 8-Ball style fortune (max 8 words, no punctuation).$categoryContext'
+          : 'The user asks: "$question".$categoryContext Reply as a Magic 8-Ball oracle with ONE cryptic answer (max 8 words, no punctuation, no explanation).';
 
       final response = await _client.post(
         Uri.parse(_endpoint),
