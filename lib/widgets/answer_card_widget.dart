@@ -6,12 +6,14 @@ class AnswerCardWidget extends StatelessWidget {
   final String answer;
   final bool isVisible;
   final IconData? categoryIcon;
+  final String? question;
 
   const AnswerCardWidget({
     super.key,
     required this.answer,
     required this.isVisible,
     this.categoryIcon,
+    this.question,
   });
 
   @override
@@ -68,27 +70,50 @@ class AnswerCardWidget extends StatelessWidget {
                           ),
                         ),
                       SingleChildScrollView(
-                        child: Text(
-                          trimmedAnswer,
-                          textAlign: TextAlign.center,
-                          style: textStyle.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            height: 1.4,
-                          ),
-                        )
-                            .animate()
-                            .then()
-                            .fadeIn(
-                              duration: const Duration(milliseconds: 300),
-                              delay: const Duration(milliseconds: 150),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (question != null && question!.isNotEmpty)
+                              Text(
+                                '"$question"',
+                                textAlign: TextAlign.center,
+                                style: textStyle.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                  height: 1.4,
+                                  fontSize: 14,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              )
+                                  .animate()
+                                  .fadeIn(
+                                    duration: const Duration(milliseconds: 300),
+                                    delay: const Duration(milliseconds: 100),
+                                  ),
+                            if (question != null && question!.isNotEmpty)
+                              const SizedBox(height: 12),
+                            Text(
+                              trimmedAnswer,
+                              textAlign: TextAlign.center,
+                              style: textStyle.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                height: 1.4,
+                              ),
                             )
-                            .scale(
-                              begin: const Offset(0.95, 0.95),
-                              end: const Offset(1.0, 1.0),
-                              duration: const Duration(milliseconds: 350),
-                              curve: Curves.easeOutBack,
-                              delay: const Duration(milliseconds: 150),
-                            ),
+                                .animate()
+                                .then()
+                                .fadeIn(
+                                  duration: const Duration(milliseconds: 300),
+                                  delay: const Duration(milliseconds: 150),
+                                )
+                                .scale(
+                                  begin: const Offset(0.95, 0.95),
+                                  end: const Offset(1.0, 1.0),
+                                  duration: const Duration(milliseconds: 350),
+                                  curve: Curves.easeOutBack,
+                                  delay: const Duration(milliseconds: 150),
+                                ),
+                          ],
+                        ),
                       ),
                     ],
                   ),

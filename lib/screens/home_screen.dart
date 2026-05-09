@@ -19,6 +19,7 @@ import '../widgets/voice_input_button.dart';
 import '../services/speech_service.dart';
 import '../services/daily_fortune_service.dart';
 import '../services/notification_service.dart';
+import '../services/share_service.dart';
 import '../widgets/streak_indicator.dart';
 import 'history_screen.dart';
 
@@ -45,6 +46,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final _speechService = SpeechService();
   final _dailyFortuneService = DailyFortuneService();
   final _notificationService = NotificationService();
+  final _shareService = ShareService();
+  final _answerCardKey = GlobalKey();
   late final AiService _aiService;
 
   StreamSubscription<void>? _shakeSubscription;
@@ -298,11 +301,58 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  AnswerCardWidget(
-                    answer: _currentAnswer,
-                    isVisible: isRevealed,
-                    categoryIcon: isRevealed ? _selectedCategory.icon : null,
+                  RepaintBoundary(
+                    key: _answerCardKey,
+                    child: AnswerCardWidget(
+                      answer: _currentAnswer,
+                      isVisible: isRevealed,
+                      categoryIcon: isRevealed ? _selectedCategory.icon : null,
+                      question: _questionController.text.trim(),
+                    ),
                   ),
+                  if (isRevealed)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: GestureDetector(
+                        onTap: () async {
+                          await _shareService.shareReadingAsImage(
+                            repaintKey: _answerCardKey,
+                            answer: _currentAnswer,
+                            question: _questionController.text.trim(),
+                            timestamp: DateTime.now(),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.share,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Share Reading',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   if (_state == _BallState.idle)
                     ShakeNowCta(onTap: _onShake),
