@@ -591,5 +591,11 @@ Passive engagement and daily reminder.
 
 ---
 
+### Status
+
+All phases implemented and committed to `main`.
+
+---
+
 *Last updated: 2026-05-07*
-*Next review: After P0 completion*
+*Next review: After user testing feedback*
