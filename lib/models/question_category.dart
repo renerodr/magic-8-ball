@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 enum QuestionCategory {
   general('General', Icons.auto_awesome, 'The user asks a general question.'),
   love('Love', Icons.favorite, 'The user asks about love or relationships.'),
