@@ -20,6 +20,7 @@ import '../services/speech_service.dart';
 import '../services/daily_fortune_service.dart';
 import '../services/notification_service.dart';
 import '../services/share_service.dart';
+import '../services/home_widget_service.dart';
 import '../widgets/streak_indicator.dart';
 import 'history_screen.dart';
 
@@ -47,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _dailyFortuneService = DailyFortuneService();
   final _notificationService = NotificationService();
   final _shareService = ShareService();
+  final _homeWidgetService = HomeWidgetService();
   final _answerCardKey = GlobalKey();
   late final AiService _aiService;
 
@@ -65,6 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _soundService.initialize();
     _dailyFortuneService.initialize();
     _notificationService.initialize();
+    _homeWidgetService.initialize();
     _checkFirstLaunchDemo();
   }
 
@@ -119,6 +122,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _hapticService.onReveal(),
       _soundService.playRevealChime(),
     ]);
+    await _homeWidgetService.updateDailyFortune(answer);
+    await _homeWidgetService.updateStreak(_dailyFortuneService.streak);
   }
 
   void _reset() => setState(() {

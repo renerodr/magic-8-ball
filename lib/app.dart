@@ -64,6 +64,10 @@ class _MagicAppState extends State<MagicApp> {
       home: _hasSeenOnboarding
           ? HomeScreen(onToggleTheme: _toggleTheme)
           : OnboardingScreen(onComplete: _completeOnboarding),
+      navigatorObservers: [],
+      routes: {
+        '/daily': (context) => HomeScreen(onToggleTheme: _toggleTheme),
+      },
     );
   }
 }
