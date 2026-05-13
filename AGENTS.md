@@ -4,9 +4,10 @@ This file provides guidance to LLM Coding Agents when working with code in this 
 
 ## Project
 
-AI-powered Magic 8-Ball Flutter app. Users shake the phone; the app calls OpenRouter to generate a mystical answer. Falls back to 20 classic responses on network/API failure. Supports dark (Magic 8-Ball) and light (Crystal Ball) themes with shake detection, haptic feedback, spatial audio, gyroscope shimmer, and a History screen.
+AI-powered Magic 8-Ball Flutter app. Users shake the phone; the app calls OpenRouter to generate a mystical answer. Falls back to 100 category-specific responses on network/API failure. Supports dark (Magic 8-Ball) and light (Crystal Ball) themes with shake detection, haptic feedback, spatial audio, gyroscope shimmer, voice input, question categories, oracle personas, favorites, daily fortune, streaks, share-as-image, onboarding, home screen widget, and a History screen.
 
 Implementation plan: `docs/superpowers/plans/2026-05-04-magic-8-ball.md`
+Visual polish roadmap: `docs/visual-polish-roadmap.md`
 
 @ARCHITECTURE.md
 
@@ -14,12 +15,15 @@ Implementation plan: `docs/superpowers/plans/2026-05-04-magic-8-ball.md`
 
 - Flutter (Dart) — no native Swift/Kotlin touches needed
 - `sensors_plus` — accelerometer (shake) + gyroscope (tilt shimmer)
-- `audioplayers` — water slosh sound on shake
-- `shared_preferences` — history persistence
+- `audioplayers` — sound effects and ambient loops via `SoundManager`
+- `shared_preferences` — history, settings, and streak persistence
 - `http` — OpenRouter API calls
 - `flutter_animate` — shimmer "thinking" animation
 - `speech_to_text` — voice input for hands-free questioning
 - `google_fonts` — Nunito + Inter typography
+- `share_plus` — share reading as image
+- `path_provider` — image file storage for sharing
+- `home_widget` — home screen widget (iOS WidgetKit / Android App Widgets)
 - `mocktail` — test mocking
 
 ## Development Commands
@@ -48,11 +52,18 @@ flutter build apk --dart-define=OPENROUTER_KEY=<your_key>
 
 - **API key:** Never hardcode in source. Always use `--dart-define=OPENROUTER_KEY=...` at run/build time. Read via `String.fromEnvironment('OPENROUTER_KEY')`.
 - **Shake threshold:** Default 15 m/s² with 500 ms debounce in `ShakeService`. Adjust `_threshold` if needed; do not change debounce without a good reason.
-- **Fallback first:** `AiService` must always return a string — catch all exceptions and return a random classic answer. Never let a network error surface to the UI.
-- **State machine:** HomeScreen has three states — `idle`, `thinking`, `revealed`. No state transition is allowed while `thinking`.
-- **Sound asset:** `assets/sounds/water_slosh.mp3` must exist before running. If missing, `SoundService.playSlosh()` will throw.
-- **Voice input:** `speech_to_text` requires microphone permission. iOS `NSMicrophoneUsageDescription` is set in `Info.plist`. Android handles this automatically.
-- **Theme:** Dark = soft charcoal `#1A1A23` + coral accent. Light = warm cream `#FAF7F2` + coral accent. Both defined in `lib/constants/app_theme.dart`.
+- **Fallback first:** `AiService` must always return a string — catch all exceptions and return a random category-specific fallback answer. Never let a network error surface to the UI.
+- **State machine:** HomeScreen has four states — `idle`, `listening`, `thinking`, `revealed`. No state transition is allowed while `thinking`.
+- **Sound assets:** `assets/sounds/water_slosh.mp3`, `reveal_chime.mp3`, and `button_click.mp3` must exist. `SoundManager` handles all audio; `SoundService` is deprecated and redirects to `SoundManager`.
+- **Audio failures:** `SoundManager` catches all audio exceptions silently. Audio failures never block the answer flow.
+- **Voice input:** `speech_to_text` requires microphone permission. iOS `NSMicrophoneUsageDescription` is set in `Info.plist`. Android handles this automatically. Voice toggle is persisted via `SpeechService.loadPreferences()`.
+- **Haptics persistence:** `HapticService.initialize()` loads persisted state from SharedPreferences. `setEnabled()` saves changes.
+- **Oracle personas:** Three personas — Spark (playful, 6 words), Luna (mystical, 8 words), Oracle Pro (wise, 10 words). Managed via `OracleContextService`.
+- **Question categories:** General, Love, Career, Yes/No, Daily. Each has its own prompt template and 20 fallback answers (100 total).
+- **Motion policy:** All animations respect reduced motion via `MotionPolicy` utility (`lib/utils/motion_policy.dart`). Particles, loops, and large transforms are disabled/shortened when `accessibleNavigation` is on.
+- **Theme:** Dark = soft charcoal `#1A1A23` + coral accent. Light = warm cream `#FAF7F2` + coral accent. Both defined in `lib/constants/app_theme.dart`. Dynamic background scenes shift by state.
+- **Context truncation:** AI prompt context is capped at 400 characters via `_maxContextChars` in `AiService`.
+- **Answer guardrails:** Post-processing removes filler prefixes, punctuation, unicode quotes/dashes, and truncates to persona word limit. Recent repeat detection checks last 10 answers.
 
 ## Code Style & Quality
 

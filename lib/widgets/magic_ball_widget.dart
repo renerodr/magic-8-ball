@@ -81,24 +81,24 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
     _revealScaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.08), weight: 50),
-      TweenSequenceItem(tween: Tween(begin: 1.08, end: 1.0), weight: 50),
-    ]).animate(CurvedAnimation(parent: _revealController, curve: Curves.elasticOut));
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.08).chain(CurveTween(curve: Curves.easeOut)), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.08, end: 1.0).chain(CurveTween(curve: Curves.elasticOut)), weight: 50),
+    ]).animate(_revealController);
     _revealScaleAnimationReduced = Tween<double>(begin: 1.0, end: 1.02).animate(
       CurvedAnimation(parent: _revealController, curve: Curves.easeOut),
     );
 
     _shakeScaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.95), weight: 33),
-      TweenSequenceItem(tween: Tween(begin: 0.95, end: 1.02), weight: 33),
-      TweenSequenceItem(tween: Tween(begin: 1.02, end: 1.0), weight: 34),
-    ]).animate(CurvedAnimation(parent: _shakeController, curve: Curves.easeOut));
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.95).chain(CurveTween(curve: Curves.easeOut)), weight: 33),
+      TweenSequenceItem(tween: Tween(begin: 0.95, end: 1.02).chain(CurveTween(curve: Curves.easeOut)), weight: 33),
+      TweenSequenceItem(tween: Tween(begin: 1.02, end: 1.0).chain(CurveTween(curve: Curves.easeOut)), weight: 34),
+    ]).animate(_shakeController);
 
     _shakeRotationAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: -0.09), weight: 33),
-      TweenSequenceItem(tween: Tween(begin: -0.09, end: 0.09), weight: 33),
-      TweenSequenceItem(tween: Tween(begin: 0.09, end: 0.0), weight: 34),
-    ]).animate(CurvedAnimation(parent: _shakeController, curve: Curves.easeOut));
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: -0.09).chain(CurveTween(curve: Curves.easeOut)), weight: 33),
+      TweenSequenceItem(tween: Tween(begin: -0.09, end: 0.09).chain(CurveTween(curve: Curves.easeOut)), weight: 33),
+      TweenSequenceItem(tween: Tween(begin: 0.09, end: 0.0).chain(CurveTween(curve: Curves.easeOut)), weight: 34),
+    ]).animate(_shakeController);
 
     _shakeController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {

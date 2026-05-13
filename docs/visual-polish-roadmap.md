@@ -469,13 +469,13 @@ Cosmic Bubblegum redesign shipped. Palette, ball, answer card, voice input, shak
 
 ---
 
-### P0: Stabilization
+### P0: Stabilization ✅ Complete
 
-| Task | Description |
+| Task | Status |
 |---|---|
-| Update `AGENTS.md` | Refresh tech stack, dependencies, key rules. Remove deprecated `TriangleClipper` / `AnswerRevealWidget` references. |
-| P0.2 Verification | Complete pending widget tests from stabilization pass. |
-| iOS mic permissions | Add `NSMicrophoneUsageDescription` to `Info.plist` for `speech_to_text`. |
+| Update `AGENTS.md` | ✅ Refreshed tech stack, key rules, removed deprecated references |
+| P0.2 Verification | ✅ Widget tests complete and passing |
+| iOS mic permissions | ✅ `NSMicrophoneUsageDescription` in `Info.plist` |
 
 ---
 
@@ -858,16 +858,43 @@ v2 phases P0-P7 are implemented and committed to `main`. v3 phases P8, P9, and P
 
 ---
 
-#### Runtime Bug Fixes (2026-05-13)
+#### Documentation & Test Coverage Pass (2026-05-13)
 
-✅ **TweenSequence assertion error fixed:**
-- `lib/widgets/magic_ball_widget.dart` — Created separate `_revealScaleAnimationReduced` Tween for reduced motion mode
-- Both animations initialized in `initState()` (no runtime reassignment)
-- Build method selects appropriate animation based on `_reduceMotion` flag
-- Fixes assertion errors at `flutter/animation/tween_sequence.dart:81` when tapping the ball
+✅ **AGENTS.md refreshed** with current feature set, tech stack (share_plus, path_provider, home_widget), and key rules (SoundManager, personas, categories, motion policy, context truncation, answer guardrails).
+
+✅ **ARCHITECTURE.md rewritten** with complete file map, updated state machine (4 states + listening), full service responsibility table, current data flow, persistence keys, and motion policy section.
+
+✅ **New test files added (43 new tests):**
+
+| Test File | Tests | Coverage |
+|---|---|---|
+| `test/services/oracle_context_service_test.dart` | 9 | Persona defaults, ring buffer, context building, repeat detection, favorites, clear |
+| `test/utils/motion_policy_test.dart` | 11 | Full/reduced particle policy, stagger delays, card entry, reducedDuration |
+| `test/constants/category_prompts_test.dart` | 10 | All categories have templates, 20 fallbacks each, no punctuation, no duplicates, total 100 |
+| `test/widgets/follow_up_suggestions_test.dart` | 6 | All 5 categories render suggestions, tap callback fires |
+| `test/models/oracle_persona_test.dart` | 7 | Spark/Luna/OraclePro properties, maxWords formula, style/description validation |
+
+**Test Coverage:** 92 tests passing
 
 **Files Modified:**
-- `lib/widgets/magic_ball_widget.dart` — separate reveal animations for normal/reduced motion
+- `AGENTS.md` — full rewrite for current project state
+- `ARCHITECTURE.md` — full rewrite with complete file map and architecture
+
+**Files Created:**
+- `test/services/oracle_context_service_test.dart`
+- `test/utils/motion_policy_test.dart`
+- `test/constants/category_prompts_test.dart`
+- `test/widgets/follow_up_suggestions_test.dart`
+- `test/models/oracle_persona_test.dart`
+
+---
+
+#### Runtime Bug Fixes (2026-05-13)
+
+✅ **TweenSequence assertion error fixed (proper root cause):**
+- `lib/widgets/magic_ball_widget.dart` — Replaced `CurvedAnimation` wrappers around `TweenSequence.animate()` with `.chain(CurveTween(curve: ...))` on each tween item
+- Root cause: `TweenSequence` produces its own `Animatable` — wrapping `.animate()` output in `CurvedAnimation` violates the tween sequence contract and triggers `tween_sequence.dart:81` assertion
+- Affected animations: `_revealScaleAnimation`, `_shakeScaleAnimation`, `_shakeRotationAnimation`
 
 ---
 
