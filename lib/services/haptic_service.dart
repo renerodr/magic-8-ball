@@ -1,14 +1,20 @@
 import 'haptic_patterns.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HapticService {
   bool _isEnabled = true;
 
   bool get isEnabled => _isEnabled;
 
-  Future<void> initialize() async {}
+  Future<void> initialize() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isEnabled = prefs.getBool('haptics_enabled') ?? true;
+  }
 
-  void setEnabled(bool enabled) {
+  Future<void> setEnabled(bool enabled) async {
     _isEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('haptics_enabled', enabled);
   }
 
   Future<void> trigger(HapticPattern pattern) async {

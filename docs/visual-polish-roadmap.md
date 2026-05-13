@@ -828,5 +828,33 @@ v2 phases P0-P7 are implemented and committed to `main`. v3 phases P8, P9, and P
 
 ---
 
+#### Re-Review Follow-ups Completed (2026-05-13)
+
+✅ **All state-consistency gaps resolved:**
+
+1. **Voice input toggle persistence** — `SpeechService` now has `loadPreferences()` method separated from engine init. Called during `HomeScreen._bootstrap()` before any voice input checks.
+
+2. **Settings sheet sync** — `SettingsSheet` now uses `_syncSettings()` helper to load persisted state from all services on init and widget update.
+
+3. **Haptics persistence** — `HapticService.initialize()` now loads from SharedPreferences; `setEnabled()` persists changes.
+
+4. **Persistence tests added** — 8 new tests in `test/services/settings_persistence_test.dart` covering voice/haptics load and save paths.
+
+**Acceptance achieved:**
+- ✅ Disabled voice input cannot be triggered after cold start
+- ✅ Haptics setting persists and is respected globally
+- ✅ Settings sheet reflects persisted toggle state reliably
+- ✅ 49 tests passing (41 original + 8 new persistence tests)
+- ✅ `flutter analyze`: 0 issues
+
+**Files Modified:**
+- `lib/services/speech_service.dart` — added `loadPreferences()` method
+- `lib/services/haptic_service.dart` — added SharedPreferences persistence
+- `lib/screens/home_screen.dart` — calls `loadPreferences()` during bootstrap
+- `lib/widgets/settings_sheet.dart` — `_syncSettings()` loads persisted state
+- `test/services/settings_persistence_test.dart` — 8 new persistence tests
+
+---
+
 *Last updated: 2026-05-13*
 *Next review: Future feature planning*

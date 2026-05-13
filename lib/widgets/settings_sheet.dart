@@ -29,18 +29,21 @@ class _SettingsSheetState extends State<SettingsSheet> {
   @override
   void initState() {
     super.initState();
-    _soundEnabled = !widget.soundManager.isMuted;
-    _hapticsEnabled = widget.hapticService.isEnabled;
-    _voiceInputEnabled = true; 
+    _syncSettings();
+  }
+
+  void _syncSettings() {
+    setState(() {
+      _soundEnabled = !widget.soundManager.isMuted;
+      _hapticsEnabled = widget.hapticService.isEnabled;
+      _voiceInputEnabled = widget.speechService.isEnabled;
+    });
   }
 
   @override
   void didUpdateWidget(SettingsSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
-    setState(() {
-      _soundEnabled = !widget.soundManager.isMuted;
-      _hapticsEnabled = widget.hapticService.isEnabled;
-    });
+    _syncSettings();
   }
 
   Future<void> _toggleSound(bool value) async {
@@ -56,8 +59,8 @@ class _SettingsSheetState extends State<SettingsSheet> {
   }
 
   Future<void> _toggleVoiceInput(bool value) async {
-    setState(() => _voiceInputEnabled = value);
     await widget.speechService.setEnabled(value);
+    _syncSettings();
     widget.onSettingsChanged?.call();
   }
 

@@ -99,7 +99,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _bootstrap() async {
     await _oracleContextService.initialize();
     await _soundManager.initialize();
-    _hapticService.initialize();
+    await _hapticService.initialize();
+    await _speechService.loadPreferences();
     _shakeSubscription = _shakeService.onShake.listen((_) => _onShake());
     await _dailyFortuneService.initialize();
     _notificationService.initialize();

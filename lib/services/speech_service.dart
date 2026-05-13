@@ -10,14 +10,18 @@ class SpeechService {
   SpeechService({SpeechToText? speech}) : _speech = speech ?? SpeechToText();
 
   bool get isEnabled => _isEnabled;
+  bool get isAvailable => _isAvailable;
+
+  Future<void> loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isEnabled = prefs.getBool('voice_input_enabled') ?? true;
+  }
 
   Future<bool> initialize() async {
     _isAvailable = await _speech.initialize(
       onError: (error) => debugPrint('Speech error: $error'),
       onStatus: (status) => debugPrint('Speech status: $status'),
     );
-    final prefs = await SharedPreferences.getInstance();
-    _isEnabled = prefs.getBool('voice_input_enabled') ?? true;
     return _isAvailable;
   }
 
@@ -53,5 +57,4 @@ class SpeechService {
   }
 
   bool get isListening => _speech.isListening;
-  bool get isAvailable => _isAvailable;
 }
