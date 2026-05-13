@@ -854,6 +854,19 @@ v2 phases P0-P7 are implemented and committed to `main`. v3 phases P8, P9, and P
 - `lib/widgets/settings_sheet.dart` — `_syncSettings()` loads persisted state
 - `test/services/settings_persistence_test.dart` — 8 new persistence tests
 
+**Test Coverage:** 49 tests passing
+
+---
+
+#### Runtime Bug Fix (2026-05-13)
+
+✅ **TweenSequence assertion error fixed:**
+- `lib/widgets/magic_ball_widget.dart` — Changed `_revealScaleAnimation` from `late final` to `late Animation<double>` to allow reassignment in reduced motion path
+- Fixes assertion errors at `flutter/animation/tween_sequence.dart:81` during reveal animation
+
+**Files Modified:**
+- `lib/widgets/magic_ball_widget.dart` — non-final reveal scale animation
+
 ---
 
 *Last updated: 2026-05-13*
