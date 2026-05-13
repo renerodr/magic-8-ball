@@ -33,7 +33,8 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
   late final Animation<double> _wobbleAnimation;
   late final Animation<double> _gradientAnimation;
   late final Animation<double> _glowAnimation;
-  late Animation<double> _revealScaleAnimation;
+  late final Animation<double> _revealScaleAnimation;
+  late final Animation<double> _revealScaleAnimationReduced;
 
   bool _reduceMotion = false;
   bool _isThinking = false;
@@ -83,6 +84,9 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.08), weight: 50),
       TweenSequenceItem(tween: Tween(begin: 1.08, end: 1.0), weight: 50),
     ]).animate(CurvedAnimation(parent: _revealController, curve: Curves.elasticOut));
+    _revealScaleAnimationReduced = Tween<double>(begin: 1.0, end: 1.02).animate(
+      CurvedAnimation(parent: _revealController, curve: Curves.easeOut),
+    );
 
     _shakeScaleAnimation = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.95), weight: 33),
@@ -148,9 +152,6 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
   void _onReveal() {
     if (_reduceMotion) {
       _revealController.duration = const Duration(milliseconds: 200);
-      _revealScaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
-        CurvedAnimation(parent: _revealController, curve: Curves.easeOut),
-      );
     }
     _revealController.forward(from: 0);
   }
@@ -223,7 +224,9 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
         final angle = _gradientAnimation.value;
         final iridescentColors = _getIridescentColors(angle);
 
-        final revealScale = _revealScaleAnimation.value;
+        final revealScale = _reduceMotion
+            ? _revealScaleAnimationReduced.value
+            : _revealScaleAnimation.value;
 
         return Transform.translate(
           offset: Offset(0, floatOffset),
