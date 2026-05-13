@@ -1,60 +1,47 @@
-import 'package:audioplayers/audioplayers.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'sound_manager.dart';
 
+@Deprecated('Use SoundManager instead. SoundService will be removed in a future version.')
 class SoundService {
-  final AudioPlayer _player = AudioPlayer();
-  final AudioPlayer _ambientPlayer = AudioPlayer();
-  bool _isMuted = false;
+  SoundManager? _manager;
 
-  bool get isMuted => _isMuted;
+  bool get isMuted => _manager?.isMuted ?? false;
 
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isMuted = prefs.getBool('sound_muted') ?? false;
+    _manager = SoundManager();
+    await _manager!.initialize();
   }
 
+  @Deprecated('Use SoundManager.setMuted instead')
   Future<void> setMuted(bool muted) async {
-    _isMuted = muted;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('sound_muted', muted);
-    if (muted) {
-      await _ambientPlayer.stop();
-    }
+    await _manager?.setMuted(muted);
   }
 
-  Future<void> _play(String assetPath) async {
-    if (_isMuted) return;
-    try {
-      await _player.play(AssetSource(assetPath));
-    } catch (_) {
-      // Sound is non-critical; swallow errors.
-    }
+  @Deprecated('Use SoundManager.play(SoundEvent.shakeSlosh) instead')
+  Future<void> playSlosh() async {
+    await _manager?.play(SoundEvent.shakeSlosh);
   }
 
-  Future<void> playSlosh() => _play('sounds/water_slosh.mp3');
+  @Deprecated('Use SoundManager.play(SoundEvent.revealChime) instead')
+  Future<void> playRevealChime() async {
+    await _manager?.play(SoundEvent.revealChime);
+  }
 
-  Future<void> playRevealChime() => _play('sounds/reveal_chime.mp3');
+  @Deprecated('Use SoundManager.play(SoundEvent.buttonTap) instead')
+  Future<void> playButtonClick() async {
+    await _manager?.play(SoundEvent.buttonTap);
+  }
 
-  Future<void> playButtonClick() => _play('sounds/button_click.mp3');
-
+  @Deprecated('Use SoundManager.startLoop instead')
   Future<void> playAmbient() async {
-    if (_isMuted) return;
-    try {
-      await _ambientPlayer.setReleaseMode(ReleaseMode.loop);
-      await _ambientPlayer.play(AssetSource('sounds/water_slosh.mp3'), volume: 0.15);
-    } catch (_) {
-      // Ambient is optional; swallow errors.
-    }
+    await _manager?.startLoop(AmbientLoop.idlePad);
   }
 
+  @Deprecated('Use SoundManager.stopLoop instead')
   Future<void> stopAmbient() async {
-    try {
-      await _ambientPlayer.stop();
-    } catch (_) {}
+    await _manager?.stopLoop(AmbientLoop.idlePad);
   }
 
   void dispose() {
-    _player.dispose();
-    _ambientPlayer.dispose();
+    _manager?.dispose();
   }
 }

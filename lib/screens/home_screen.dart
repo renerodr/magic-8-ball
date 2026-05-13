@@ -7,9 +7,10 @@ import '../models/reading.dart';
 import '../models/question_category.dart';
 import '../services/ai_service.dart';
 import '../services/haptic_service.dart';
+import '../services/haptic_patterns.dart';
 import '../services/history_service.dart';
 import '../services/shake_service.dart';
-import '../services/sound_service.dart';
+import '../services/sound_manager.dart';
 import '../widgets/answer_card_widget.dart';
 import '../widgets/magic_ball_widget.dart';
 import '../constants/scene_colors.dart';
@@ -24,6 +25,7 @@ import '../services/notification_service.dart';
 import '../services/share_service.dart';
 import '../services/home_widget_service.dart';
 import '../widgets/streak_indicator.dart';
+import '../widgets/settings_sheet.dart';
 import 'history_screen.dart';
 
 const _apiKey = String.fromEnvironment('OPENROUTER_KEY', defaultValue: '');
@@ -43,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _questionController = TextEditingController();
   final _shakeService = ShakeService();
   final _hapticService = HapticService();
-  final _soundService = SoundService();
+  late final SoundManager _soundManager;
   final _historyService = HistoryService();
   final _questionFocusNode = FocusNode();
   final _speechService = SpeechService();
@@ -80,12 +82,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _aiService = AiService(client: http.Client(), apiKey: _apiKey);
+    _soundManager = SoundManager();
+    _hapticService.initialize();
+    _soundManager.initialize();
     _shakeSubscription = _shakeService.onShake.listen((_) => _onShake());
-    _soundService.initialize();
     _dailyFortuneService.initialize();
     _notificationService.initialize();
     _homeWidgetService.initialize();
     _checkFirstLaunchDemo();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _soundManager.startLoop(AmbientLoop.idlePad);
+    });
   }
 
   Future<void> _checkFirstLaunchDemo() async {
@@ -112,10 +119,9 @@ class _HomeScreenState extends State<HomeScreen> {
       _isShaking = true;
     });
 
-    await Future.wait([
-      _hapticService.onShake(),
-      _soundService.playSlosh(),
-    ]);
+    _hapticService.trigger(HapticPattern.shake);
+    _soundManager.play(SoundEvent.shakeSlosh);
+    _soundManager.startLoop(AmbientLoop.thinkingPulse);
 
     final answer = await _aiService.getAnswer(
       question: _questionController.text.trim(),
@@ -137,18 +143,27 @@ class _HomeScreenState extends State<HomeScreen> {
       _isShaking = false;
       _isStreakReward = isStreak;
     });
-    await Future.wait([
-      _hapticService.onReveal(),
-      _soundService.playRevealChime(),
-    ]);
+
+    if (isStreak) {
+      _hapticService.trigger(HapticPattern.streak);
+      _soundManager.play(SoundEvent.streakFanfare);
+    } else {
+      _hapticService.trigger(HapticPattern.reveal);
+      _soundManager.play(SoundEvent.revealChime);
+    }
+    _soundManager.stopAll();
+
     await _homeWidgetService.updateDailyFortune(answer);
     await _homeWidgetService.updateStreak(_dailyFortuneService.streak);
   }
 
-  void _reset() => setState(() {
-        _state = _BallState.idle;
-        _isStreakReward = false;
-      });
+  void _reset() {
+    setState(() {
+      _state = _BallState.idle;
+      _isStreakReward = false;
+    });
+    _soundManager.startLoop(AmbientLoop.idlePad);
+  }
 
   Future<void> _startVoiceInput() async {
     if (_state != _BallState.idle) return;
@@ -167,6 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     setState(() => _isListening = true);
+    _soundManager.startLoop(AmbientLoop.idlePad);
     final result = await _speechService.listen();
     setState(() => _isListening = false);
 
@@ -183,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _shakeSubscription?.cancel();
     _shakeService.dispose();
-    _soundService.dispose();
+    _soundManager.dispose();
     _speechService.stop();
     _questionController.dispose();
     _questionFocusNode.dispose();
@@ -218,21 +234,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 context,
                 MaterialPageRoute(builder: (_) => const HistoryScreen()),
               ),
-              soundService: _soundService,
+              onTap: () => _hapticService.trigger(HapticPattern.buttonPress),
             ),
             actions: [
               _AnimatedIconButton(
+                icon: Icon(Icons.settings_rounded),
+                tooltip: 'Settings',
+                onPressed: _showSettingsSheet,
+                onTap: () => _hapticService.trigger(HapticPattern.buttonPress),
+              ),
+              _AnimatedIconButton(
                 icon: Icon(
-                  _soundService.isMuted
+                  _soundManager.isMuted
                       ? Icons.volume_off_rounded
                       : Icons.volume_up_rounded,
                 ),
-                tooltip: _soundService.isMuted ? 'Unmute' : 'Mute',
+                tooltip: _soundManager.isMuted ? 'Unmute' : 'Mute',
                 onPressed: () async {
-                  await _soundService.setMuted(!_soundService.isMuted);
+                  await _soundManager.setMuted(!_soundManager.isMuted);
                   setState(() {});
                 },
-                soundService: _soundService,
+                onTap: () => _hapticService.trigger(HapticPattern.buttonPress),
               ),
               _AnimatedIconButton(
                 icon: Icon(
@@ -240,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 tooltip: 'Toggle theme',
                 onPressed: widget.onToggleTheme,
-                soundService: _soundService,
+                onTap: () => _hapticService.trigger(HapticPattern.buttonPress),
               ),
             ],
           ),
@@ -423,6 +445,21 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  Future<void> _showSettingsSheet() async {
+    _hapticService.trigger(HapticPattern.buttonPress);
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SettingsSheet(
+        soundManager: _soundManager,
+        hapticService: _hapticService,
+        speechService: _speechService,
+        onSettingsChanged: () => setState(() {}),
+      ),
+    );
+  }
 }
 
 class _BottomFadeGradient extends StatelessWidget {
@@ -570,13 +607,13 @@ class _AnimatedIconButton extends StatefulWidget {
   final Icon icon;
   final String tooltip;
   final VoidCallback onPressed;
-  final SoundService? soundService;
+  final VoidCallback? onTap;
 
   const _AnimatedIconButton({
     required this.icon,
     required this.tooltip,
     required this.onPressed,
-    this.soundService,
+    this.onTap,
   });
 
   @override
@@ -615,7 +652,7 @@ class _AnimatedIconButtonState extends State<_AnimatedIconButton>
   void _onTapUp(TapUpDetails details) {
     setState(() => _isPressed = false);
     _controller.reverse();
-    widget.soundService?.playButtonClick();
+    widget.onTap?.call();
     widget.onPressed();
   }
 

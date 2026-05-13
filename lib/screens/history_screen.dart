@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../models/reading.dart';
 import '../services/history_service.dart';
 import '../services/haptic_service.dart';
+import '../services/haptic_patterns.dart';
 import '../utils/motion_policy.dart';
 import '../widgets/favorite_button.dart';
 
@@ -39,7 +40,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _navigateToHomeAndAsk() {
-    _hapticService.onReveal();
+    _hapticService.trigger(HapticPattern.buttonPress);
     Navigator.of(context).pop();
   }
 
@@ -58,6 +59,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _toggleFavorite(Reading reading) async {
+    _hapticService.trigger(HapticPattern.favorite);
     await _historyService.toggleFavorite(reading);
     _refreshReadings();
   }
@@ -375,7 +377,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
       ),
       confirmDismiss: (direction) async {
-        await _hapticService.onError();
+        _hapticService.trigger(HapticPattern.error);
         await _deleteReading(reading);
         if (!mounted) return true;
         final messenger = ScaffoldMessenger.of(context);

@@ -686,7 +686,38 @@ The next three phases turn the app from a polished utility into a small magical 
 
 ### Status
 
-v2 phases P0-P7 are implemented and committed to `main`. P8 is implemented and ready to commit. P9 spec is drafted. P10 is approved for planning.
+v2 phases P0-P7 are implemented and committed to `main`. P8 and P9 are implemented. P10 is approved for planning.
+
+#### P9 Implementation Status (2026-05-12)
+
+**Completed:**
+- SoundManager with sound categories (ui, shake, reveal, ambient, fanfare, error)
+- SoundEvent enum for typed sound playback
+- AmbientLoop enum for state-driven audio loops
+- HapticPatterns with named patterns (shake, reveal, favorite, error, streak, share, buttonPress)
+- HapticService refactored to pattern-based API
+- Settings panel with sound, haptics, and voice input toggles
+- State-driven audio (idle pad, thinking pulse, reveal tail)
+- Tilt-reactive audio volume adjustment
+- Global mute that silences one-shots, loops, and haptics
+- Audio failures are fire-and-forget (never block answer flow)
+
+**Test Coverage:**
+- All 37 tests pass
+- Existing tests maintain compatibility through deprecated SoundService methods
+
+**Files Created:**
+- `lib/services/sound_manager.dart` — central audio management
+- `lib/services/haptic_patterns.dart` — haptic pattern definitions
+- `lib/widgets/settings_sheet.dart` — settings bottom sheet UI
+
+**Files Modified:**
+- `lib/services/sound_service.dart` — deprecated, redirects to SoundManager
+- `lib/services/haptic_service.dart` — pattern-based API with legacy compatibility
+- `lib/screens/home_screen.dart` — state-driven audio, settings integration
+- `lib/screens/history_screen.dart` — haptic patterns on favorite/delete
+
+---
 
 #### P8 Implementation Status (2026-05-12)
 
@@ -703,7 +734,7 @@ v2 phases P0-P7 are implemented and committed to `main`. P8 is implemented and r
 - Reduced motion policy for all P8 features
 
 **Test Coverage:**
-- All 36 widget and service tests pass
+- All 37 widget and service tests pass
 - P0.2 verification tests confirm semantic buttons, reduced motion, state transitions
 
 **Files Created:**
@@ -718,11 +749,7 @@ v2 phases P0-P7 are implemented and committed to `main`. P8 is implemented and r
 - `lib/widgets/answer_card_widget.dart` — reveal choreography, golden variant, category icon
 - `lib/utils/motion_policy.dart` — particle policy, reduced duration helpers
 
-**Pending:**
-- P9 implementation (SoundManager, haptic patterns, settings panel)
-- P10 planning (oracle personas, category templates, context memory)
-
 ---
 
 *Last updated: 2026-05-12*
-*Next review: After P9 implementation*
+*Next review: After P10 implementation*
