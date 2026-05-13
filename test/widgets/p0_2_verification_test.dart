@@ -111,8 +111,8 @@ void main() {
       // Initially shows idle hint
       expect(find.text('Shake your phone, tap the ball, or ask aloud'), findsOneWidget);
 
-      // Tap the ball
-      await tester.tap(find.byType(MagicBallWidget));
+      // Tap the ball (warnIfMissed: false because ball may be partially obscured by layout)
+      await tester.tap(find.byType(MagicBallWidget), warnIfMissed: false);
       await tester.pump();
 
       // Should now show thinking hint

@@ -3,8 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 const Color _coral = Color(0xFFFF6B6B);
 const Color _teal = Color(0xFF4ECDC4);
-const Color _butterYellow = Color(0xFFFFE66D);
-const Color _softLavender = Color(0xFFC9B1FF);
 
 const Color _lightBg = Color(0xFFFAF7F2);
 const Color _darkBg = Color(0xFF1A1A23);

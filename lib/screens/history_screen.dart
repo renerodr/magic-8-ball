@@ -380,6 +380,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _hapticService.trigger(HapticPattern.error);
         await _deleteReading(reading);
         if (!mounted) return true;
+        // ignore: use_build_context_synchronously
         final messenger = ScaffoldMessenger.of(context);
         messenger.showSnackBar(
           SnackBar(

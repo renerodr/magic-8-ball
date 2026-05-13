@@ -165,9 +165,9 @@ class AiService {
     final truncated = context.substring(0, _maxContextChars);
     final lastSpace = truncated.lastIndexOf(' ');
     if (lastSpace > _maxContextChars * 0.8) {
-      return truncated.substring(0, lastSpace) + '...';
+      return '${truncated.substring(0, lastSpace)}...';
     }
-    return truncated + '...';
+    return '$truncated...';
   }
 
   OracleContextService get contextService => _contextService;

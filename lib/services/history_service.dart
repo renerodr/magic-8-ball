@@ -38,7 +38,6 @@ class HistoryService {
   Future<void> toggleFavorite(Reading reading) async {
     final prefs = await SharedPreferences.getInstance();
     final existing = prefs.getStringList(_key) ?? [];
-    final targetJson = jsonEncode(reading.toJson());
 
     for (var i = 0; i < existing.length; i++) {
       final item = Reading.fromJson(
