@@ -858,14 +858,16 @@ v2 phases P0-P7 are implemented and committed to `main`. v3 phases P8, P9, and P
 
 ---
 
-#### Runtime Bug Fix (2026-05-13)
+#### Runtime Bug Fixes (2026-05-13)
 
 ✅ **TweenSequence assertion error fixed:**
-- `lib/widgets/magic_ball_widget.dart` — Changed `_revealScaleAnimation` from `late final` to `late Animation<double>` to allow reassignment in reduced motion path
-- Fixes assertion errors at `flutter/animation/tween_sequence.dart:81` during reveal animation
+- `lib/widgets/magic_ball_widget.dart` — Created separate `_revealScaleAnimationReduced` Tween for reduced motion mode
+- Both animations initialized in `initState()` (no runtime reassignment)
+- Build method selects appropriate animation based on `_reduceMotion` flag
+- Fixes assertion errors at `flutter/animation/tween_sequence.dart:81` when tapping the ball
 
 **Files Modified:**
-- `lib/widgets/magic_ball_widget.dart` — non-final reveal scale animation
+- `lib/widgets/magic_ball_widget.dart` — separate reveal animations for normal/reduced motion
 
 ---
 
