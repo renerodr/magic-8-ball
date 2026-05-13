@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:magic_8_ball/services/daily_fortune_service.dart';
 
 void main() {
@@ -6,6 +7,8 @@ void main() {
     late DailyFortuneService service;
 
     setUp(() async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({});
       service = DailyFortuneService();
       await service.initialize();
       await service.reset();

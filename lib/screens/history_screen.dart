@@ -160,16 +160,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 }
 
                 if (readings.isEmpty) {
-                  return Center(
-                    child: Text(
-                      _showFavoritesOnly
-                          ? 'No favorites yet'
-                          : 'No matches found',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  );
+                  if (_showFavoritesOnly) {
+                    return _buildFavoritesEmptyState(context);
+                  }
+                  if (_searchQuery.isNotEmpty) {
+                    return _buildNoSearchResultsState(context);
+                  }
+                  return _buildEmptyState(context);
                 }
 
                 return ListView.builder(
@@ -220,13 +217,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          width: 80,
-          height: 80,
+          width: 64,
+          height: 64,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.black.withValues(alpha: 0.1),
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.08),
           ),
         )
             .animate(
@@ -265,7 +262,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
         const SizedBox(height: 12),
         Text(
-          'Shake your device to begin',
+          'Shake your device or type below to begin',
           style: TextStyle(
             fontSize: 14,
             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
@@ -276,13 +273,77 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ElevatedButton.icon(
           onPressed: _navigateToHomeAndAsk,
           icon: const Icon(Icons.play_arrow),
-          label: const Text('Ask Now'),
+          label: const Text('Ask a Question'),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(30),
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFavoritesEmptyState(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.favorite_border,
+          size: 48,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.15),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'No starred readings yet',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Tap the star on any reading to save it',
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNoSearchResultsState(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.search_off,
+          size: 48,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.15),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'The mists are unclear…',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Try different words or browse your full history',
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+          textAlign: TextAlign.center,
         ),
       ],
     );

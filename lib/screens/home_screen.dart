@@ -12,7 +12,9 @@ import '../services/shake_service.dart';
 import '../services/sound_service.dart';
 import '../widgets/answer_card_widget.dart';
 import '../widgets/magic_ball_widget.dart';
-import '../widgets/pulsing_background.dart';
+import '../constants/scene_colors.dart';
+import '../widgets/dynamic_background.dart';
+import '../widgets/particle_layer.dart';
 import '../widgets/shake_now_cta.dart';
 import '../widgets/tilt_gradient_widget.dart';
 import '../widgets/voice_input_button.dart';
@@ -57,7 +59,22 @@ class _HomeScreenState extends State<HomeScreen> {
   String _currentAnswer = '';
   bool _isShaking = false;
   bool _isListening = false;
+  bool _isStreakReward = false;
   QuestionCategory _selectedCategory = QuestionCategory.general;
+
+  AppVisualState _visualState() {
+    if (_isListening && _state == _BallState.idle) {
+      return AppVisualState.listening;
+    }
+    switch (_state) {
+      case _BallState.idle:
+        return AppVisualState.idle;
+      case _BallState.thinking:
+        return AppVisualState.thinking;
+      case _BallState.revealed:
+        return _isStreakReward ? AppVisualState.streak : AppVisualState.revealed;
+    }
+  }
 
   @override
   void initState() {
@@ -112,11 +129,13 @@ class _HomeScreenState extends State<HomeScreen> {
       timestamp: timestamp,
     ));
     await _dailyFortuneService.recordAsked();
+    final isStreak = _dailyFortuneService.isStreakReward;
 
     setState(() {
       _currentAnswer = answer;
       _state = _BallState.revealed;
       _isShaking = false;
+      _isStreakReward = isStreak;
     });
     await Future.wait([
       _hapticService.onReveal(),
@@ -128,6 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _reset() => setState(() {
         _state = _BallState.idle;
+        _isStreakReward = false;
       });
 
   Future<void> _startVoiceInput() async {
@@ -175,7 +195,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final isThinking = _state == _BallState.thinking;
     final isRevealed = _state == _BallState.revealed;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
+    final visualState = _visualState();
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return GestureDetector(
       onTap: isRevealed ? _reset : null,
@@ -223,162 +244,184 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          body: PulsingBackground(
-            glowColor: primary,
-            isDark: isDark,
+          body: DynamicBackground(
+            state: visualState,
+            category: isRevealed ? _selectedCategory : null,
             child: SafeArea(
               top: false,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-                    child: _QuestionInput(
-                      controller: _questionController,
-                      focusNode: _questionFocusNode,
-                      onSubmitted: _onShake,
-                      isListening: _isListening,
-                      onMicTap: _startVoiceInput,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _CategoryChips(
-                    selectedCategory: _selectedCategory,
-                    onCategorySelected: (category) {
-                      setState(() => _selectedCategory = category);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  StreakIndicator(streak: _dailyFortuneService.streak),
-                  const SizedBox(height: 12),
-                  if (_state == _BallState.idle && _dailyFortuneService.isDailyFortuneAvailable)
-                    GestureDetector(
-                      onTap: () {
-                        _questionController.text = _dailyFortuneService.dailyPrompt;
-                        _onShake();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFFFD700).withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.wb_sunny,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              'Daily Fortune',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: _onShake,
-                    child: TiltGradientWidget(
-                      size: 300,
-                      child: MagicBallWidget(
-                        isShaking: _isShaking,
-                        isThinking: isThinking,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  RepaintBoundary(
-                    key: _answerCardKey,
-                    child: AnswerCardWidget(
-                      answer: _currentAnswer,
-                      isVisible: isRevealed,
-                      categoryIcon: isRevealed ? _selectedCategory.icon : null,
-                      question: _questionController.text.trim(),
-                    ),
-                  ),
-                  if (isRevealed)
                     Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: GestureDetector(
-                        onTap: () async {
-                          await _shareService.shareReadingAsImage(
-                            repaintKey: _answerCardKey,
-                            answer: _currentAnswer,
-                            question: _questionController.text.trim(),
-                            timestamp: DateTime.now(),
-                          );
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                      child: _QuestionInput(
+                        controller: _questionController,
+                        focusNode: _questionFocusNode,
+                        onSubmitted: _onShake,
+                        isListening: _isListening,
+                        onMicTap: _startVoiceInput,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _CategoryChips(
+                      selectedCategory: _selectedCategory,
+                      onCategorySelected: (category) {
+                        setState(() => _selectedCategory = category);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          StreakIndicator(streak: _dailyFortuneService.streak),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_state == _BallState.idle &&
+                        _dailyFortuneService.isDailyFortuneAvailable &&
+                        screenHeight >= 500)
+                      GestureDetector(
+                        onTap: () {
+                          _questionController.text = _dailyFortuneService.dailyPrompt;
+                          _onShake();
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
                             ),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFFD700).withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.share,
+                                Icons.wb_sunny,
+                                color: Colors.white,
                                 size: 16,
-                                color: Theme.of(context).colorScheme.primary,
                               ),
-                              const SizedBox(width: 6),
+                              SizedBox(width: 6),
                               Text(
-                                'Share Reading',
+                                'Daily Fortune',
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color: Colors.white,
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 300,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          ParticleLayer(state: visualState),
+                          GestureDetector(
+                            onTap: _onShake,
+                            child: TiltGradientWidget(
+                              size: 300,
+                              child: MagicBallWidget(
+                                isShaking: _isShaking,
+                                isThinking: isThinking,
+                                isRevealed: isRevealed,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  const SizedBox(height: 16),
-                  if (_state == _BallState.idle)
-                    ShakeNowCta(onTap: _onShake),
-                  const SizedBox(height: 32),
-                  Text(
-                    isThinking
-                        ? 'Consulting the oracle...'
-                        : isRevealed
-                            ? 'Tap to ask again'
-                            : 'Shake your phone, tap the ball, or ask aloud',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const _BottomFadeGradient(),
-                ],
+                    const SizedBox(height: 16),
+                    RepaintBoundary(
+                      key: _answerCardKey,
+                      child: AnswerCardWidget(
+                        answer: _currentAnswer,
+                        isVisible: isRevealed,
+                        isRevealed: isRevealed,
+                        categoryIcon: isRevealed ? _selectedCategory.icon : null,
+                        question: _questionController.text.trim(),
+                        isGolden: _isStreakReward,
+                      ),
+                    ),
+                    if (isRevealed)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: GestureDetector(
+                          onTap: () async {
+                            await _shareService.shareReadingAsImage(
+                              repaintKey: _answerCardKey,
+                              answer: _currentAnswer,
+                              question: _questionController.text.trim(),
+                              timestamp: DateTime.now(),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.share,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Share Reading',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    if (_state == _BallState.idle)
+                      ShakeNowCta(onTap: _onShake),
+                    const SizedBox(height: 32),
+                    Text(
+                      isThinking
+                          ? 'Consulting the oracle...'
+                          : isRevealed
+                              ? 'Tap to ask again'
+                              : 'Shake your phone, tap the ball, or ask aloud',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const _BottomFadeGradient(),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 }
 

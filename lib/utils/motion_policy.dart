@@ -29,4 +29,12 @@ class MotionPolicy {
   Duration longDuration() {
     return isReduced ? const Duration(milliseconds: 100) : const Duration(milliseconds: 1500);
   }
+
+  bool get shouldShowParticles => !isReduced;
+
+  Duration reducedDuration(Duration full) {
+    if (!isReduced) return full;
+    if (full.inMilliseconds <= 200) return Duration.zero;
+    return const Duration(milliseconds: 100);
+  }
 }

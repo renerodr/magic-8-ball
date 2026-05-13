@@ -591,11 +591,138 @@ Passive engagement and daily reminder.
 
 ---
 
-### Status
+## v3 Roadmap — Level Up Pass
 
-All phases implemented and committed to `main`.
+### Intent
+
+The next three phases turn the app from a polished utility into a small magical game. The work starts with another visual polish pass, then upgrades sound/game feel, then gives the AI a stronger oracle identity.
+
+### Phase Order
+
+| Phase | Focus | Goal |
+|---|---|---|
+| P8 | Cinematic Polish Pass | Make the home screen, reveal flow, history, and streak states feel crafted and alive. |
+| P9 | Soundscape & Game Feel | Give every meaningful action a sound and haptic identity. |
+| P10 | Living Oracle AI | Make AI answers feel contextual, voiced, and character-driven. |
 
 ---
 
-*Last updated: 2026-05-07*
-*Next review: After user testing feedback*
+### P8: Cinematic Polish Pass
+
+**Goal:** Improve the app's visual appeal without changing the core interaction model.
+
+| Feature | Description |
+|---|---|
+| Dynamic background scenes | Shift background treatment by state: idle, listening, thinking, revealed. |
+| Category-tinted visuals | Use rose for Love, gold/teal for Career, sunrise tones for Daily, and coral/teal for General. |
+| Particle layer | Add drifting sparkles, bubbles, and star flecks around the orb. Respect reduced motion. |
+| Reveal choreography | Sequence the reveal as orb pulse, particle burst, answer card slide, then glow settle. |
+| Layout hierarchy pass | Reduce crowding around input, category chips, streak, daily fortune, answer card, and share button. |
+| Golden streak card | Give 7-day streak rewards a real golden card treatment with glow and fanfare-ready hooks. |
+| History polish | Improve empty, favorites-only, and no-search-result states with better visual treatment. |
+
+**Acceptance:**
+
+- Home screen looks alive in idle state.
+- Thinking and revealed states look distinct.
+- Small screens do not overflow.
+- Reduced motion disables particles and looping motion.
+
+---
+
+### P9: Soundscape & Game Feel
+
+**Goal:** Make the app feel tactile, musical, and toy-like.
+
+| Feature | Description |
+|---|---|
+| Curated sound pack | Replace generated placeholder sounds with tap, shake, shimmer, reveal, streak, and error sounds. |
+| SoundManager | Centralize volume, mute, sound categories, one-shots, loops, and failure handling. |
+| Ambient state loops | Idle gets an airy pad, thinking gets shimmer pulses, revealed gets a short sparkle tail. |
+| Tilt-reactive audio | Pan or soften selected sounds based on gyroscope data. |
+| Haptic sequencer | Define named patterns for shake, reveal, favorite, error, streak, and share. |
+| Settings panel | Add controls for sound, haptics, voice input, and reduced-motion shortcuts. |
+
+**Acceptance:**
+
+- Mute applies everywhere.
+- Audio failures never block the answer flow.
+- Major actions feel different by sound and haptic feedback.
+- Looping sounds start and stop cleanly on state changes.
+
+---
+
+### P10: Living Oracle AI
+
+**Goal:** Make the AI feel like a character with tone, context, and memory.
+
+| Feature | Description |
+|---|---|
+| Oracle personas | Add Spark, Luna, and Oracle Pro answer styles. |
+| Category prompt templates | Give each category its own style rules, length target, and fallback set. |
+| Follow-up prompt | After an answer, offer one tap action such as "Ask a follow-up" or "Give me a sign". |
+| Local context memory | Feed recent questions, favorites, streak, category, and persona into prompts without storing secrets. |
+| Answer quality guardrails | Limit length, avoid recent repeats, and remove generic filler. |
+| Category-aware fallback | Replace one generic fallback list with category-specific offline answers. |
+
+**Acceptance:**
+
+- Same question can feel different by persona and category.
+- Answers fit the card.
+- Offline fallback matches the selected category.
+- No API keys, prompts, or private user data are logged.
+
+---
+
+### v3 Priority Matrix
+
+| Phase | Effort | Impact | Recommended Order |
+|---|---|---|---|
+| P8 Cinematic Polish | Medium | High | 1st |
+| P9 Soundscape & Game Feel | Medium | High | 2nd |
+| P10 Living Oracle AI | High | High | 3rd |
+
+---
+
+### Status
+
+v2 phases P0-P7 are implemented and committed to `main`. P8 is implemented and ready to commit. P9 spec is drafted. P10 is approved for planning.
+
+#### P8 Implementation Status (2026-05-12)
+
+**Completed:**
+- Dynamic background scenes with state-driven color transitions
+- Category tint overlays on reveal
+- Particle layer with sparkle, bubble, and star fleck types
+- Orb pulse animation on reveal (spring curve, 400ms)
+- Answer card choreography (slide, fade, scale, category icon)
+- Golden streak card for 7-day rewards
+- History screen empty states (no readings, favorites-only, no search results)
+- Layout hierarchy pass with proper spacing
+- Small screen adaptation (orb scales to 0.85 on <600dp)
+- Reduced motion policy for all P8 features
+
+**Test Coverage:**
+- All 36 widget and service tests pass
+- P0.2 verification tests confirm semantic buttons, reduced motion, state transitions
+
+**Files Created:**
+- `lib/constants/scene_colors.dart`
+- `lib/widgets/dynamic_background.dart`
+- `lib/widgets/particle_layer.dart`
+
+**Files Modified:**
+- `lib/screens/home_screen.dart` — state system, layout zones, background wiring
+- `lib/screens/history_screen.dart` — empty states, search, favorites filter
+- `lib/widgets/magic_ball_widget.dart` — reveal pulse animation, small screen scaling
+- `lib/widgets/answer_card_widget.dart` — reveal choreography, golden variant, category icon
+- `lib/utils/motion_policy.dart` — particle policy, reduced duration helpers
+
+**Pending:**
+- P9 implementation (SoundManager, haptic patterns, settings panel)
+- P10 planning (oracle personas, category templates, context memory)
+
+---
+
+*Last updated: 2026-05-12*
+*Next review: After P9 implementation*

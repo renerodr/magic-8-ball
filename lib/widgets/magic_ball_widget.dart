@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 class MagicBallWidget extends StatefulWidget {
   final bool isShaking;
   final bool isThinking;
+  final bool isRevealed;
 
   const MagicBallWidget({
     super.key,
     this.isShaking = false,
     this.isThinking = false,
+    this.isRevealed = false,
   });
 
   @override
@@ -23,6 +25,7 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
   late final AnimationController _wobbleController;
   late final AnimationController _gradientController;
   late final AnimationController _glowController;
+  late final AnimationController _revealController;
   late final Animation<double> _floatAnimation;
   late final Animation<double> _breatheAnimation;
   late final Animation<double> _shakeScaleAnimation;
@@ -30,6 +33,7 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
   late final Animation<double> _wobbleAnimation;
   late final Animation<double> _gradientAnimation;
   late final Animation<double> _glowAnimation;
+  late final Animation<double> _revealScaleAnimation;
 
   bool _reduceMotion = false;
   bool _isThinking = false;
@@ -58,6 +62,10 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
       duration: const Duration(seconds: 4),
       vsync: this,
     );
+    _revealController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
 
     _floatAnimation = Tween<double>(begin: -4.0, end: 4.0).animate(
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
@@ -71,6 +79,10 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
     _glowAnimation = Tween<double>(begin: 0.3, end: 0.6).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
+    _revealScaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.08), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.08, end: 1.0), weight: 50),
+    ]).animate(CurvedAnimation(parent: _revealController, curve: Curves.elasticOut));
 
     _shakeScaleAnimation = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.95), weight: 33),
@@ -128,6 +140,19 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
     if (widget.isThinking != oldWidget.isThinking) {
       setThinking(widget.isThinking);
     }
+    if (widget.isRevealed && !oldWidget.isRevealed) {
+      _onReveal();
+    }
+  }
+
+  void _onReveal() {
+    if (_reduceMotion) {
+      _revealController.duration = const Duration(milliseconds: 200);
+      _revealScaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+        CurvedAnimation(parent: _revealController, curve: Curves.easeOut),
+      );
+    }
+    _revealController.forward(from: 0);
   }
 
   void setThinking(bool thinking) {
@@ -150,6 +175,7 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
     _wobbleController.dispose();
     _gradientController.dispose();
     _glowController.dispose();
+    _revealController.dispose();
     super.dispose();
   }
 
@@ -174,6 +200,8 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final orbScale = screenHeight < 600 ? 0.85 : 1.0;
 
     return AnimatedBuilder(
       animation: Listenable.merge([
@@ -183,6 +211,7 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
         _wobbleController,
         _gradientController,
         _glowController,
+        _revealController,
       ]),
       builder: (context, child) {
         final floatOffset = _reduceMotion ? 0.0 : _floatAnimation.value;
@@ -194,10 +223,12 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
         final angle = _gradientAnimation.value;
         final iridescentColors = _getIridescentColors(angle);
 
+        final revealScale = _revealScaleAnimation.value;
+
         return Transform.translate(
           offset: Offset(0, floatOffset),
           child: Transform.scale(
-            scale: breatheScale * shakeScale,
+            scale: breatheScale * shakeScale * revealScale * orbScale,
             child: Transform.rotate(
               angle: shakeRotation,
               child: Transform(
