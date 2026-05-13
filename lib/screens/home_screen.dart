@@ -87,26 +87,30 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _oracleContextService = OracleContextService();
-    _oracleContextService.initialize();
+    _soundManager = SoundManager();
     _aiService = AiService(
       client: http.Client(),
       apiKey: _apiKey,
       contextService: _oracleContextService,
     );
-    _soundManager = SoundManager();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    await _oracleContextService.initialize();
+    await _soundManager.initialize();
     _hapticService.initialize();
-    _soundManager.initialize();
     _shakeSubscription = _shakeService.onShake.listen((_) => _onShake());
-    _dailyFortuneService.initialize();
+    await _dailyFortuneService.initialize();
     _notificationService.initialize();
     _homeWidgetService.initialize();
-    _checkFirstLaunchDemo();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _soundManager.startLoop(AmbientLoop.idlePad);
-      setState(() {
-        _currentPersona = _oracleContextService.currentPersona;
-      });
+
+    setState(() {
+      _currentPersona = _oracleContextService.currentPersona;
     });
+
+    _soundManager.startLoop(AmbientLoop.idlePad);
+    _checkFirstLaunchDemo();
   }
 
   Future<void> _checkFirstLaunchDemo() async {
@@ -183,6 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _startVoiceInput() async {
     if (_state != _BallState.idle) return;
+    if (!_speechService.isEnabled) return;
 
     final available = await _speechService.initialize();
     if (!available) {
@@ -215,7 +220,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _shakeSubscription?.cancel();
     _shakeService.dispose();
-    _soundManager.dispose();
+    try {
+      _soundManager.dispose();
+    } catch (_) {}
     _speechService.stop();
     _questionController.dispose();
     _questionFocusNode.dispose();

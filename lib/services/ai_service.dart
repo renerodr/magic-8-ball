@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/oracle_persona.dart';
 import '../models/question_category.dart';
@@ -13,6 +14,10 @@ class AiService {
 
   static const _endpoint = 'https://openrouter.ai/api/v1/chat/completions';
   static const _model = 'openai/gpt-3.5-turbo';
+  static const _maxContextChars = 400;
+
+  @visibleForTesting
+  static int get maxContextCharsForTest => _maxContextChars;
 
   AiService({
     required http.Client client,
@@ -38,7 +43,7 @@ class AiService {
       final systemPrompt = _buildSystemPrompt(
         persona: personaConfig,
         categoryConfig: categoryConfig,
-        context: context,
+        context: _truncateContext(context),
       );
 
       final prompt = question.trim().isEmpty
@@ -72,7 +77,10 @@ class AiService {
           persona: personaConfig,
           category: category ?? QuestionCategory.general,
         );
-        _contextService.recordExchange(question, processed);
+        final normalizedQuestion = question.trim();
+        if (normalizedQuestion.isNotEmpty && processed.isNotEmpty) {
+          _contextService.recordExchange(normalizedQuestion, processed);
+        }
         return processed;
       }
       return _fallback(category ?? QuestionCategory.general);
@@ -110,6 +118,14 @@ class AiService {
   }) {
     var processed = answer;
 
+    processed = processed
+        .replaceAll(RegExp(r'^(I think|I believe|I feel|Perhaps|Maybe|Probably),?\s*'), '')
+        .replaceAll(RegExp(r'[\u201C\u201D]'), '"')
+        .replaceAll(RegExp(r'[\u2018\u2019]'), "'")
+        .replaceAll(RegExp(r'[\u2013\u2014]'), '-')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
     final maxWords = persona.maxWords;
     final words = processed.split(RegExp(r'\s+'));
     if (words.length > maxWords) {
@@ -117,11 +133,16 @@ class AiService {
     }
 
     processed = processed
-        .replaceAll(RegExp(r'^(I think|I believe|I feel|Perhaps|Maybe|Probably),?\s*'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-
-    processed = processed.replaceAll(RegExp(r'[.,!?;:]'), '');
+        .replaceAll('"', '')
+        .replaceAll("'", '')
+        .replaceAll('—', '')
+        .replaceAll('–', '')
+        .replaceAll('.', '')
+        .replaceAll(',', '')
+        .replaceAll('!', '')
+        .replaceAll('?', '')
+        .replaceAll(';', '')
+        .replaceAll(':', '');
 
     if (_contextService.isRecentAnswer(processed)) {
       return _fallback(category);
@@ -137,6 +158,16 @@ class AiService {
   String _fallback(QuestionCategory category) {
     final fallbacks = CategoryPromptTemplates.getFallbacksForCategory(category);
     return fallbacks[Random().nextInt(fallbacks.length)];
+  }
+
+  String _truncateContext(String context) {
+    if (context.length <= _maxContextChars) return context;
+    final truncated = context.substring(0, _maxContextChars);
+    final lastSpace = truncated.lastIndexOf(' ');
+    if (lastSpace > _maxContextChars * 0.8) {
+      return truncated.substring(0, lastSpace) + '...';
+    }
+    return truncated + '...';
   }
 
   OracleContextService get contextService => _contextService;

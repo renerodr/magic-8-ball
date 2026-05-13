@@ -686,7 +686,7 @@ The next three phases turn the app from a polished utility into a small magical 
 
 ### Status
 
-v2 phases P0-P7 are implemented and committed to `main`. P8 and P9 are implemented. P10 is approved for planning.
+v2 phases P0-P7 are implemented and committed to `main`. v3 phases P8, P9, and P10 are implemented.
 
 #### P9 Implementation Status (2026-05-12)
 
@@ -751,5 +751,44 @@ v2 phases P0-P7 are implemented and committed to `main`. P8 and P9 are implement
 
 ---
 
-*Last updated: 2026-05-12*
-*Next review: After P10 implementation*
+#### P10 Implementation Status (2026-05-13)
+
+**Completed:**
+- Oracle personas (Spark, Luna, Oracle Pro) with distinct styles
+- OracleContextService for persona + context management
+- 100 category-specific fallback answers (20 per category)
+- Category prompt templates with tone guidance
+- Answer quality guardrails (word count, punctuation, filler removal)
+- Recent repeat detection (last 10 answers)
+- Follow-up suggestion chips (2-3 per category)
+- Persona selector in app bar
+- Context injection into AI prompts
+
+**Test Coverage:**
+- All 37 tests pass
+- AI service test updated for new fallbacks
+
+**Files Created:**
+- `lib/models/oracle_persona.dart`
+- `lib/services/oracle_context_service.dart`
+- `lib/constants/category_fallbacks.dart`
+- `lib/constants/category_prompts.dart`
+- `lib/widgets/follow_up_suggestions.dart`
+
+**Files Modified:**
+- `lib/services/ai_service.dart` — personas, guardrails, context
+- `lib/screens/home_screen.dart` — persona selector, suggestions
+- `test/services/ai_service_test.dart` — updated for new fallbacks
+
+**Post-Implementation Improvements (from code review):**
+- Make startup deterministic in `HomeScreen` by awaiting persona/context initialization before first render and removing post-frame race conditions.
+- Add explicit prompt/context length cap in `AiService` before API call to keep payload bounded and predictable.
+- Unify haptics state ownership (single source of truth in `HapticService`) and remove duplicated haptics state from audio manager.
+- Persist and actually enforce `Voice Input` toggle in runtime behavior (not just local sheet state).
+- Harden post-processing normalization in `AiService` for broader punctuation/Unicode variants.
+- Add targeted tests for guardrails: persona word limits, repeat-answer fallback trigger, context-length cap, and persona persistence.
+
+---
+
+*Last updated: 2026-05-13*
+*Next review: Future feature planning*

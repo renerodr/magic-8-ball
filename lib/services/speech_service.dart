@@ -1,18 +1,30 @@
 import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SpeechService {
   final SpeechToText _speech;
   bool _isAvailable = false;
+  bool _isEnabled = true;
 
   SpeechService({SpeechToText? speech}) : _speech = speech ?? SpeechToText();
+
+  bool get isEnabled => _isEnabled;
 
   Future<bool> initialize() async {
     _isAvailable = await _speech.initialize(
       onError: (error) => debugPrint('Speech error: $error'),
       onStatus: (status) => debugPrint('Speech status: $status'),
     );
+    final prefs = await SharedPreferences.getInstance();
+    _isEnabled = prefs.getBool('voice_input_enabled') ?? true;
     return _isAvailable;
+  }
+
+  Future<void> setEnabled(bool enabled) async {
+    _isEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('voice_input_enabled', enabled);
   }
 
   Future<String?> listen() async {

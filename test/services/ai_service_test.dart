@@ -4,6 +4,7 @@ import 'package:http/testing.dart';
 import 'dart:convert';
 import 'package:magic_8_ball/services/ai_service.dart';
 import 'package:magic_8_ball/constants/category_fallbacks.dart';
+import 'package:magic_8_ball/models/oracle_persona.dart';
 
 void main() {
   group('AiService', () {
@@ -38,6 +39,62 @@ void main() {
       final service = AiService(client: mockClient, apiKey: 'test-key');
       final answer = await service.getAnswer(question: '');
       expect(kGeneralFallbacks, contains(answer));
+    });
+
+    test('truncates answer to persona max words', () async {
+      final mockClient = MockClient((request) async {
+        final body = {
+          'choices': [
+            {
+              'message': {'content': 'This is a very long answer that has way too many words in it for the persona'}
+            }
+          ]
+        };
+        return http.Response(jsonEncode(body), 200);
+      });
+
+      final service = AiService(client: mockClient, apiKey: 'test-key');
+      final answer = await service.getAnswer(question: 'Test?', persona: OraclePersona.spark);
+      final wordCount = answer.split(' ').length;
+      expect(wordCount, lessThanOrEqualTo(OraclePersona.spark.maxWords));
+    });
+
+    test('removes punctuation from answer', () async {
+      final mockClient = MockClient((request) async {
+        final body = {
+          'choices': [
+            {
+              'message': {'content': 'Yes, definitely!'}
+            }
+          ]
+        };
+        return http.Response(jsonEncode(body), 200);
+      });
+
+      final service = AiService(client: mockClient, apiKey: 'test-key');
+      final answer = await service.getAnswer(question: 'Test?');
+      expect(answer, isNot(contains(RegExp(r'[.,!?;:]'))));
+    });
+
+    test('removes unicode quotes and dashes', () async {
+      final mockClient = MockClient((request) async {
+        final body = {
+          'choices': [
+            {
+              'message': {'content': '"Yes" — definitely'}
+            }
+          ]
+        };
+        return http.Response(jsonEncode(body), 200);
+      });
+
+      final service = AiService(client: mockClient, apiKey: 'test-key');
+      final answer = await service.getAnswer(question: 'Test?');
+      expect(answer, isNot(contains(RegExp(r'[\u201C\u201D\u2018\u2019\u2013\u2014]'))));
+    });
+
+    test('context max length constant is defined', () {
+      expect(AiService.maxContextCharsForTest, equals(400));
     });
   });
 }

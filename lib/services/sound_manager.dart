@@ -21,7 +21,6 @@ class SoundManager {
   final AudioPlayer _oneShotPlayer = AudioPlayer();
   final AudioPlayer _loopPlayer = AudioPlayer();
   bool _isMuted = false;
-  bool _isHapticsEnabled = true;
   AmbientLoop? _currentLoop;
 
   static const Map<SoundEvent, String> _assetMap = {
@@ -57,12 +56,10 @@ class SoundManager {
   };
 
   bool get isMuted => _isMuted;
-  bool get isHapticsEnabled => _isHapticsEnabled;
 
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
     _isMuted = prefs.getBool('sound_muted') ?? false;
-    _isHapticsEnabled = prefs.getBool('haptics_enabled') ?? true;
   }
 
   Future<void> setMuted(bool muted) async {
@@ -72,12 +69,6 @@ class SoundManager {
     if (muted) {
       await stopAll();
     }
-  }
-
-  Future<void> setHapticsEnabled(bool enabled) async {
-    _isHapticsEnabled = enabled;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('haptics_enabled', enabled);
   }
 
   Future<void> play(SoundEvent event) async {
