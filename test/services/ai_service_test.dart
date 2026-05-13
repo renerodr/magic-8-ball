@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'dart:convert';
 import 'package:magic_8_ball/services/ai_service.dart';
-import 'package:magic_8_ball/constants/classic_answers.dart';
+import 'package:magic_8_ball/constants/category_fallbacks.dart';
 
 void main() {
   group('AiService', () {
@@ -24,20 +24,20 @@ void main() {
       expect(answer, equals('Signs point to yes'));
     });
 
-    test('returns a classic answer when API returns non-200', () async {
+    test('returns a category fallback when API returns non-200', () async {
       final mockClient = MockClient((_) async => http.Response('error', 429));
 
       final service = AiService(client: mockClient, apiKey: 'test-key');
       final answer = await service.getAnswer(question: 'Will I fail?');
-      expect(kClassicAnswers, contains(answer));
+      expect(kGeneralFallbacks, contains(answer));
     });
 
-    test('returns a classic answer when network throws', () async {
+    test('returns a category fallback when network throws', () async {
       final mockClient = MockClient((_) async => throw Exception('no network'));
 
       final service = AiService(client: mockClient, apiKey: 'test-key');
       final answer = await service.getAnswer(question: '');
-      expect(kClassicAnswers, contains(answer));
+      expect(kGeneralFallbacks, contains(answer));
     });
   });
 }

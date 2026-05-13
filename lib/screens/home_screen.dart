@@ -26,6 +26,9 @@ import '../services/share_service.dart';
 import '../services/home_widget_service.dart';
 import '../widgets/streak_indicator.dart';
 import '../widgets/settings_sheet.dart';
+import '../widgets/follow_up_suggestions.dart';
+import '../models/oracle_persona.dart';
+import '../services/oracle_context_service.dart';
 import 'history_screen.dart';
 
 const _apiKey = String.fromEnvironment('OPENROUTER_KEY', defaultValue: '');
@@ -46,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _shakeService = ShakeService();
   final _hapticService = HapticService();
   late final SoundManager _soundManager;
+  late final OracleContextService _oracleContextService;
   final _historyService = HistoryService();
   final _questionFocusNode = FocusNode();
   final _speechService = SpeechService();
@@ -63,6 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isListening = false;
   bool _isStreakReward = false;
   QuestionCategory _selectedCategory = QuestionCategory.general;
+  OraclePersona _currentPersona = OraclePersona.spark;
 
   AppVisualState _visualState() {
     if (_isListening && _state == _BallState.idle) {
@@ -81,7 +86,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _aiService = AiService(client: http.Client(), apiKey: _apiKey);
+    _oracleContextService = OracleContextService();
+    _oracleContextService.initialize();
+    _aiService = AiService(
+      client: http.Client(),
+      apiKey: _apiKey,
+      contextService: _oracleContextService,
+    );
     _soundManager = SoundManager();
     _hapticService.initialize();
     _soundManager.initialize();
@@ -92,6 +103,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _checkFirstLaunchDemo();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _soundManager.startLoop(AmbientLoop.idlePad);
+      setState(() {
+        _currentPersona = _oracleContextService.currentPersona;
+      });
     });
   }
 
@@ -126,6 +140,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final answer = await _aiService.getAnswer(
       question: _questionController.text.trim(),
       category: _selectedCategory,
+      persona: _currentPersona,
+      streak: _dailyFortuneService.streak,
     );
 
     final timestamp = DateTime.now();
@@ -237,6 +253,41 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => _hapticService.trigger(HapticPattern.buttonPress),
             ),
             actions: [
+              PopupMenuButton<OraclePersona>(
+                icon: const Icon(Icons.auto_awesome_rounded),
+                tooltip: 'Oracle Persona',
+                onSelected: (persona) async {
+                  _hapticService.trigger(HapticPattern.buttonPress);
+                  setState(() => _currentPersona = persona);
+                  await _oracleContextService.setPersona(persona);
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: OraclePersona.spark,
+                    child: _PersonaItem(
+                      name: 'Spark',
+                      description: 'Playful',
+                      isSelected: _currentPersona == OraclePersona.spark,
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: OraclePersona.luna,
+                    child: _PersonaItem(
+                      name: 'Luna',
+                      description: 'Mystical',
+                      isSelected: _currentPersona == OraclePersona.luna,
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: OraclePersona.oraclePro,
+                    child: _PersonaItem(
+                      name: 'Oracle Pro',
+                      description: 'Wise',
+                      isSelected: _currentPersona == OraclePersona.oraclePro,
+                    ),
+                  ),
+                ],
+              ),
               _AnimatedIconButton(
                 icon: Icon(Icons.settings_rounded),
                 tooltip: 'Settings',
@@ -421,6 +472,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
+                        ),
+                      ),
+                    if (isRevealed)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: FollowUpSuggestions(
+                          category: _selectedCategory,
+                          onSuggestionTap: (suggestion) {
+                            _questionController.text = suggestion;
+                            _onShake();
+                          },
                         ),
                       ),
                     const SizedBox(height: 16),
@@ -743,6 +805,52 @@ class _CategoryChips extends StatelessWidget {
           );
         }).toList(),
       ),
+    );
+  }
+}
+
+class _PersonaItem extends StatelessWidget {
+  final String name;
+  final String description;
+  final bool isSelected;
+
+  const _PersonaItem({
+    required this.name,
+    required this.description,
+    required this.isSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        if (isSelected)
+          Icon(
+            Icons.check_circle,
+            size: 16,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        if (isSelected) const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              name,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+            Text(
+              description,
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
