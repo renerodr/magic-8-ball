@@ -33,7 +33,7 @@ class _MagicBallWidgetState extends State<MagicBallWidget>
   late final Animation<double> _wobbleAnimation;
   late final Animation<double> _gradientAnimation;
   late final Animation<double> _glowAnimation;
-  late final Animation<double> _revealScaleAnimation;
+  late Animation<double> _revealScaleAnimation;
 
   bool _reduceMotion = false;
   bool _isThinking = false;
